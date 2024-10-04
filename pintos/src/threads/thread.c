@@ -626,10 +626,12 @@ thread_awake(int64_t ticks)
   struct thread* temp_thread;
   int64_t sleep_ticks;
 
-  for (cur = list_begin(&sleep_list); cur != list_end(&sleep_list); cur = list_next(cur)){
+  cur = list_begin(&sleep_list);
+  while (cur != list_end(&sleep_list)){
     temp_thread = list_entry(cur, struct thread, elem);
     sleep_ticks = temp_thread -> sleep_ticks;
 
+    cur = list_next(cur);
     if(sleep_ticks <= ticks){
       list_pop_front(&sleep_list);
       thread_unblock(temp_thread);
