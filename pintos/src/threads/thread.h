@@ -144,7 +144,7 @@ int thread_get_load_avg (void);
 void thread_sleep(int64_t ticks);
 bool sleep_list_order(struct list_elem *x, struct list_elem *y, void *aux UNUSED);
 void thread_awake(int64_t ticks);
-int64_t get_thread_tick(void);
-bool check_readylist_empty(void);
+// int64_t get_thread_tick(void);
+// bool check_readylist_empty(void);
 
 #endif /* threads/thread.h */

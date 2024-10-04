@@ -594,15 +594,16 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 void /*Project 1*/
 thread_sleep(int64_t ticks) 
 {
-  struct thread *cur = thread_current();
   enum intr_level old_level;
-
   old_level = intr_disable();
+
+  struct thread *cur;
+
+  cur = thread_current();
   
-  list_pop_front (&ready_list);
   if (cur != idle_thread){
     cur->sleep_ticks = ticks;
-    list_insert_ordered(&ready_list, &cur->elem, (list_less_func *) sleep_list_order, 0);
+    list_insert_ordered(&sleep_list, &cur->elem, (list_less_func *) sleep_list_order, 0);
     thread_block();
   }
 
@@ -618,6 +619,9 @@ sleep_list_order(struct list_elem *x, struct list_elem *y, void *aux UNUSED)
 void /*Project 1*/
 thread_awake(int64_t ticks)
 {
+  enum intr_level old_level;
+  old_level = intr_disable();
+
   struct list_elem* cur;
   struct thread* temp_thread;
   int64_t sleep_ticks;
@@ -626,22 +630,24 @@ thread_awake(int64_t ticks)
     temp_thread = list_entry(cur, struct thread, elem);
     sleep_ticks = temp_thread -> sleep_ticks;
 
-    if(sleep_ticks >= ticks){
+    if(sleep_ticks <= ticks){
       list_pop_front(&sleep_list);
       thread_unblock(temp_thread);
     }
   }
+
+  intr_set_level(old_level);
 }
 
-int64_t /*Project 1*/
-get_thread_tick(void)
-{
-  struct thread *tmp=list_entry(list_begin(&sleep_list), struct thread, elem); 
-  return tmp->sleep_ticks; 
-}
+// int64_t /*Project 1*/
+// get_thread_tick(void)
+// {
+//   struct thread *tmp=list_entry(list_begin(&sleep_list), struct thread, elem); 
+//   return tmp->sleep_ticks; 
+// }
 
-bool /*Project 1*/
-check_readylist_empty(void)
-{
-  return list_empty(&sleep_list);
-}
+// bool /*Project 1*/
+// check_readylist_empty(void)
+// {
+//   return list_empty(&sleep_list);
+// }
