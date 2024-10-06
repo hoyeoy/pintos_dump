@@ -346,7 +346,7 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
-  if(new_priority < list_entry(list_head(&ready_list), struct thread, elem)->priority){
+  if(new_priority < list_entry(list_begin(&ready_list), struct thread, elem)->priority){
     thread_yield();
   }
 }
@@ -653,6 +653,24 @@ thread_awake(int64_t ticks)
   }
 
   intr_set_level(old_level);
+}
+
+bool
+priority_preemption(void)
+{
+  // if(!list_empty(&ready_list) && priority > thread_get_priority()){
+  //   thread_yield();
+  // }
+  if(list_empty(&ready_list)){
+    return false;
+  }
+  else{ // if list is not empty
+    struct thread * t = list_entry(list_begin(&ready_list), struct thread, elem);
+    if(t->priority > thread_current()->priority) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // int64_t /*Project 1*/
