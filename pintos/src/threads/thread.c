@@ -345,7 +345,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  thread_current ()->origin_prior = new_priority;
   update_priority();
 
   if(new_priority < list_entry(list_begin(&ready_list), struct thread, elem)->priority){
@@ -694,6 +694,10 @@ priority_donation(void)
 
     if(curr->priority < t->priority){
       curr->priority = t->priority;
+    }
+    lock = curr->lock_waiting;
+    if(lock==NULL){
+      break;
     }
   }
 }
