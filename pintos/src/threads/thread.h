@@ -91,6 +91,10 @@ struct thread
     struct list_elem allelem;           /* List element for all threads list. */
     /*Project 1*/
     int64_t sleep_ticks;                /* ticks for wake up*/
+    int origin_prior;
+    struct lock *lock_waiting;
+    struct list donation_list;
+    struct list_elem donation_elem;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -146,7 +150,8 @@ bool sleep_list_order(struct list_elem *x, struct list_elem *y, void *aux UNUSED
 bool priority_list_order(struct list_elem *x, struct list_elem *y, void *aux UNUSED);
 void thread_awake(int64_t ticks);
 bool priority_preemption(void);
-// int64_t get_thread_tick(void);
-// bool check_readylist_empty(void);
+void priority_donation(void);
+void delete_lock(struct lock *lock);
+void update_priority(void);
 
 #endif /* threads/thread.h */

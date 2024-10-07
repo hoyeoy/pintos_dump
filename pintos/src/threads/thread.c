@@ -346,6 +346,8 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  update_priority();
+
   if(new_priority < list_entry(list_begin(&ready_list), struct thread, elem)->priority){
     thread_yield();
   }
@@ -479,6 +481,9 @@ init_thread (struct thread *t, const char *name, int priority)
 
   /*Project 1*/
   t->sleep_ticks = 0;
+  t->origin_prior = priority;
+  t->lock_waiting = NULL;
+  list_init(&(t->donation_list));
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -673,15 +678,57 @@ priority_preemption(void)
   return false;
 }
 
-// int64_t /*Project 1*/
-// get_thread_tick(void)
-// {
-//   struct thread *tmp=list_entry(list_begin(&sleep_list), struct thread, elem); 
-//   return tmp->sleep_ticks; 
-// }
+void
+priority_donation(void)
+{
+  struct thread *t = thread_current();
+  struct lock *lock = t->lock_waiting;
+  int nested_depth = 0;
 
-// bool /*Project 1*/
-// check_readylist_empty(void)
-// {
-//   return list_empty(&sleep_list);
-// }
+  struct thread *curr = NULL;
+  while(nested_depth++ < 8){
+    curr = lock->holder;
+    if(curr==NULL){
+      break;
+    }
+
+    if(curr->priority < t->priority){
+      curr->priority = t->priority;
+    }
+  }
+}
+
+void
+delete_lock(struct lock *lock)
+{
+  struct thread *t = thread_current();
+  struct list_elem *curr;
+
+  for(curr=list_begin(&(t->donation_list));curr!=list_end(&(t->donation_list));curr=list_next(curr))
+  {
+    if(list_entry(curr, struct thread, donation_elem)->lock_waiting == lock){
+      list_remove(curr);
+    }
+  }
+}
+
+void
+update_priority(void)
+{
+  int max_priority=PRI_MIN;
+  struct thread *t = thread_current();
+  struct list_elem *curr;
+
+  t->priority = t->origin_prior;
+
+  for(curr=list_begin(&(t->donation_list));curr!=list_end(&(t->donation_list));curr=list_next(curr))
+  {
+    if(max_priority<list_entry(curr, struct thread, donation_elem)->priority){
+      max_priority=list_entry(curr, struct thread, donation_elem)->priority;
+    }
+  }
+
+  if(max_priority>t->priority){
+    t->priority=max_priority;
+  }
+}
