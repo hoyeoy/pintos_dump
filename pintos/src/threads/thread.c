@@ -1,4 +1,5 @@
 #include "threads/thread.h"
+#include "threads/fixed-point.h"
 #include <debug.h>
 #include <stddef.h>
 #include <random.h>
@@ -39,6 +40,9 @@ static struct thread *initial_thread;
 
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
+
+/*Project 1*/
+int load_avg;
 
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame 
@@ -114,6 +118,7 @@ thread_start (void)
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
+  load_avg = 0;
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
@@ -345,6 +350,9 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  if(thread_mlfqs){
+    return;
+  }
   thread_current ()->origin_prior = new_priority;
   update_priority();
 
@@ -362,33 +370,37 @@ thread_get_priority (void)
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED) 
+thread_set_nice (int nice) 
 {
-  /* Not yet implemented. */
+  thread_current()->nice = nice;
+  advanced_priority(thread_current());
+
+  if(priority_preemption()){
+    thread_yield();
+  }
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  /* Project1 */ 
+  return FP_to_N(mul_FP_to_N(load_avg,100));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  /* Project1 */
+  return FP_to_N(mul_FP_to_N(thread_current()->recent_CPU, 100)); 
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -484,6 +496,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->origin_prior = priority;
   t->lock_waiting = NULL;
   list_init(&(t->donation_list));
+  t->nice = 0;
+  t->recent_CPU = 0;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -663,9 +677,6 @@ thread_awake(int64_t ticks)
 bool
 priority_preemption(void)
 {
-  // if(!list_empty(&ready_list) && priority > thread_get_priority()){
-  //   thread_yield();
-  // }
   if(list_empty(&ready_list)){
     return false;
   }
@@ -734,5 +745,64 @@ update_priority(void)
 
   if(max_priority>t->priority){
     t->priority=max_priority;
+  }
+}
+
+/*Project 1*/
+void
+advanced_priority (struct thread *t)
+{
+  if(t!=idle_thread){
+    int priority = FP_to_N(sub_FP(N_to_FP(PRI_MAX), add_FP(div_FP_by_N(t->recent_CPU,4),mul_FP_to_N(N_to_FP(t->nice),2))));
+    t->origin_prior = priority;
+  }
+}
+
+void
+advanced_recent_cpu(struct thread *t)
+{
+  if(t!=idle_thread){
+    // int recent_cpu=(2*load_avg)/(2*load_avg+1)*recent_cpu+nice; 
+    int recent_CPU= add_FP_to_N(mul_FP(div_FP(N_to_FP(2*load_avg),N_to_FP(2*load_avg+1)),N_to_FP(recent_CPU)),t->nice);
+    t->recent_CPU=recent_CPU;
+  }
+}
+
+void
+cal_load_avg(void)
+{
+  int count = list_size(&ready_list);
+  if (thread_current() != idle_thread){
+    count++;
+  }
+
+  // int new_load_avg = add_FP(mul_FP_to_N(div_FP_by_N(N_to_FP(59), 60),load_avg), div_FP_by_N(N_to_FP(count),60));
+  int new_load_avg = add_FP(mul_FP(div_FP_by_N(N_to_FP(59), 60),load_avg), div_FP_by_N(N_to_FP(count),60));
+
+  if(FP_to_N(new_load_avg)<0){
+    return;
+  }
+  else{
+    load_avg = new_load_avg;
+  }
+}
+
+void
+recent_cpu_update(void)
+{
+  if(thread_current()!=idle_thread){
+    thread_current() -> recent_CPU = add_FP_to_N(thread_current()->recent_CPU, 1) ;
+  }
+}
+
+void
+advanced_all_update(void)
+{
+  struct list_elem *curr;
+
+  for(curr=list_begin(&all_list);curr!=list_end(&all_list);curr=list_next(curr))
+  {
+    advanced_priority(curr);
+    advanced_recent_cpu(curr);
   }
 }

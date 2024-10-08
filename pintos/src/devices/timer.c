@@ -173,16 +173,22 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 
+  /*Project 1*/
+  if(thread_mlfqs){
+    recent_cpu_update();
+
+    if(!(ticks%4)){
+      advanced_priority(thread_current());
+    }
+
+    if(!(ticks%TIMER_FREQ)){
+      advanced_recent_cpu(thread_current());
+      cal_load_avg();
+      advanced_priority(thread_current());
+    }
+
+  }
   thread_awake(ticks);
-  /*Project 1*/ //0930
-  // int64_t thread_ticks;
-  
-  // if(check_readylist_empty()){
-  //   thread_ticks = get_thread_tick();
-  //   if(thread_ticks>=ticks){
-  //     thread_awake(ticks);
-  //   }
-  // }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

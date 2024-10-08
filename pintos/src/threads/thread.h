@@ -95,6 +95,8 @@ struct thread
     struct lock *lock_waiting;
     struct list donation_list;
     struct list_elem donation_elem;
+    int nice;
+    int recent_CPU;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -153,5 +155,10 @@ bool priority_preemption(void);
 void priority_donation(void);
 void delete_lock(struct lock *lock);
 void update_priority(void);
+void advanced_priority (struct thread *t);
+void advanced_recent_cpu(struct thread *t);
+void cal_load_avg(void);
+void recent_cpu_update(void);
+void advanced_all_update(void);
 
 #endif /* threads/thread.h */
