@@ -372,27 +372,48 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice) 
 {
-  thread_current()->nice = nice;
-  advanced_priority(thread_current());
+  enum intr_level old_level;
+  old_level = intr_disable();
+
+  struct thread *t = thread_current();
+
+  t->nice = nice;
+  advanced_priority(t);
 
   if(priority_preemption()){
     thread_yield();
   }
+
+  intr_set_level(old_level);
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  return thread_current()->nice;
+  enum intr_level old_level;
+  old_level = intr_disable();
+
+  int nice = thread_current()->nice;
+
+  intr_set_level(old_level);
+
+  return nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Project1 */ 
-  return FP_to_N_nearest(mul_FP_to_N(load_avg,100));
+  /* Project1 */
+  enum intr_level old_level;
+  old_level = intr_disable(); 
+
+  int output = FP_to_N_nearest(mul_FP_to_N(load_avg,100));
+  
+  intr_set_level(old_level);
+
+  return output;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -400,7 +421,14 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Project1 */
-  return FP_to_N_nearest(mul_FP_to_N(thread_current()->recent_CPU, 100)); 
+  enum intr_level old_level;
+  old_level = intr_disable(); 
+
+  int output = FP_to_N_nearest(mul_FP_to_N(thread_current()->recent_CPU, 100)); 
+  
+  intr_set_level(old_level);
+
+  return output;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -752,8 +780,17 @@ update_priority(void)
 void
 advanced_priority (struct thread *t)
 {
+  ASSERT(t->nice>=-20 && t->nice<=20);
+
   if(t!=idle_thread){
     int priority = FP_to_N(sub_FP(N_to_FP(PRI_MAX), add_FP(div_FP_by_N(t->recent_CPU,4),mul_FP_to_N(N_to_FP(t->nice),2))));
+    
+    if(priority<0){
+      priority = PRI_MIN;
+    }else if(priority>63){
+      priority = PRI_MAX;
+    }
+
     t->priority = priority;
   }
 }
@@ -761,10 +798,16 @@ advanced_priority (struct thread *t)
 void
 advanced_recent_cpu(struct thread *t)
 {
+  ASSERT(t->nice>=-20 && t->nice<=20);
+
   if(t!=idle_thread){
     // int recent_cpu=(2*load_avg)/(2*load_avg+1)*recent_cpu+nice; 
     int recent_CPU= add_FP_to_N(mul_FP(div_FP(mul_FP_to_N(load_avg,2),add_FP_to_N(mul_FP_to_N(load_avg,2),1)),t->recent_CPU),t->nice);
+    //printf("nice is %d\n", t->nice);
+    //printf("recent CPU is %d\n", FP_to_N(t->recent_CPU));
+    //printf("load_avg is %d\n", FP_to_N(load_avg));
     t->recent_CPU=recent_CPU;
+    //printf("after recent CPU is %d\n", FP_to_N(t->recent_CPU));
   }
 }
 
@@ -778,19 +821,14 @@ cal_load_avg(void)
 
   // int new_load_avg = add_FP(mul_FP_to_N(div_FP_by_N(N_to_FP(59), 60),load_avg), div_FP_by_N(N_to_FP(count),60));
   int new_load_avg = add_FP(mul_FP(div_FP(N_to_FP(59), N_to_FP(60)), load_avg), mul_FP_to_N(div_FP(N_to_FP(1), N_to_FP(60)), count));
-
-  if(FP_to_N(new_load_avg)<0){
-    load_avg = 0;
-  }
-  else{
-    load_avg = new_load_avg;
-  }
+  load_avg=new_load_avg;
 }
 
 void
 recent_cpu_update(void)
 {
   struct thread *t = thread_current();
+
   if(t!=idle_thread){
     t -> recent_CPU = add_FP_to_N(t->recent_CPU, 1) ;
   }
@@ -803,7 +841,11 @@ advanced_all_update(void)
 
   for(curr=list_begin(&all_list);curr!=list_end(&all_list);curr=list_next(curr))
   {
-    advanced_priority(curr);
-    advanced_recent_cpu(curr);
+    advanced_priority(list_entry (curr, struct thread, allelem));
+  }
+
+  for(curr=list_begin(&all_list);curr!=list_end(&all_list);curr=list_next(curr))
+  {
+    advanced_recent_cpu(list_entry (curr, struct thread, allelem));
   }
 }

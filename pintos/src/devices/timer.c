@@ -174,6 +174,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
   thread_tick ();
 
   /*Project 1*/
+  //struct thread *curr = thread_current();
+
   if(thread_mlfqs){
     recent_cpu_update();
 
@@ -181,11 +183,12 @@ timer_interrupt (struct intr_frame *args UNUSED)
       advanced_all_update();
       cal_load_avg();
     }
-    else if(!(ticks%4)){
+
+    if(!(ticks%4)){
       advanced_priority(thread_current());
     }
-
   }
+
   thread_awake(ticks);
 }
 
