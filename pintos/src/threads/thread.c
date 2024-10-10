@@ -392,7 +392,7 @@ int
 thread_get_load_avg (void) 
 {
   /* Project1 */ 
-  return FP_to_N(mul_FP_to_N(load_avg,100));
+  return FP_to_N_nearest(mul_FP_to_N(load_avg,100));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -400,7 +400,7 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Project1 */
-  return FP_to_N(mul_FP_to_N(thread_current()->recent_CPU, 100)); 
+  return FP_to_N_nearest(mul_FP_to_N(thread_current()->recent_CPU, 100)); 
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -754,7 +754,7 @@ advanced_priority (struct thread *t)
 {
   if(t!=idle_thread){
     int priority = FP_to_N(sub_FP(N_to_FP(PRI_MAX), add_FP(div_FP_by_N(t->recent_CPU,4),mul_FP_to_N(N_to_FP(t->nice),2))));
-    t->origin_prior = priority;
+    t->priority = priority;
   }
 }
 
@@ -763,7 +763,7 @@ advanced_recent_cpu(struct thread *t)
 {
   if(t!=idle_thread){
     // int recent_cpu=(2*load_avg)/(2*load_avg+1)*recent_cpu+nice; 
-    int recent_CPU= add_FP_to_N(mul_FP(div_FP(N_to_FP(2*load_avg),N_to_FP(2*load_avg+1)),N_to_FP(recent_CPU)),t->nice);
+    int recent_CPU= add_FP_to_N(mul_FP(div_FP(mul_FP_to_N(load_avg,2),add_FP_to_N(mul_FP_to_N(load_avg,2),1)),t->recent_CPU),t->nice);
     t->recent_CPU=recent_CPU;
   }
 }
@@ -777,10 +777,10 @@ cal_load_avg(void)
   }
 
   // int new_load_avg = add_FP(mul_FP_to_N(div_FP_by_N(N_to_FP(59), 60),load_avg), div_FP_by_N(N_to_FP(count),60));
-  int new_load_avg = add_FP(mul_FP(div_FP_by_N(N_to_FP(59), 60),load_avg), div_FP_by_N(N_to_FP(count),60));
+  int new_load_avg = add_FP(mul_FP(div_FP(N_to_FP(59), N_to_FP(60)), load_avg), mul_FP_to_N(div_FP(N_to_FP(1), N_to_FP(60)), count));
 
   if(FP_to_N(new_load_avg)<0){
-    return;
+    load_avg = 0;
   }
   else{
     load_avg = new_load_avg;
@@ -790,8 +790,9 @@ cal_load_avg(void)
 void
 recent_cpu_update(void)
 {
-  if(thread_current()!=idle_thread){
-    thread_current() -> recent_CPU = add_FP_to_N(thread_current()->recent_CPU, 1) ;
+  struct thread *t = thread_current();
+  if(t!=idle_thread){
+    t -> recent_CPU = add_FP_to_N(t->recent_CPU, 1) ;
   }
 }
 
