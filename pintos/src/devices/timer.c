@@ -180,11 +180,11 @@ timer_interrupt (struct intr_frame *args UNUSED)
     recent_cpu_update();
 
     if(!(ticks%TIMER_FREQ)){
-      advanced_all_update();
       cal_load_avg();
+      advanced_all_update();
     }
 
-    if(!(ticks%4)){
+    else if(!(ticks%4)){
       advanced_priority(thread_current());
     }
   }

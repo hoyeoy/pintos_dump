@@ -838,14 +838,14 @@ void
 advanced_all_update(void)
 {
   struct list_elem *curr;
-
+  
   for(curr=list_begin(&all_list);curr!=list_end(&all_list);curr=list_next(curr))
   {
-    advanced_priority(list_entry (curr, struct thread, allelem));
+    advanced_recent_cpu(list_entry (curr, struct thread, allelem));
   }
 
   for(curr=list_begin(&all_list);curr!=list_end(&all_list);curr=list_next(curr))
   {
-    advanced_recent_cpu(list_entry (curr, struct thread, allelem));
+    advanced_priority(list_entry (curr, struct thread, allelem));
   }
 }
