@@ -68,7 +68,6 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0) 
     {
-      // list_push_back (&sema->waiters, &thread_current ()->elem);
       /*Project 1*/
       list_insert_ordered(&(sema->waiters), &(thread_current ()->elem), (list_less_func *) priority_list_order, 0);
       thread_block ();
@@ -121,7 +120,6 @@ sema_up (struct semaphore *sema)
     thread_unblock (list_entry (list_pop_front (&sema->waiters), struct thread, elem));
   }
   sema->value++;
-  /* Project 1: Priority preemption 코드 추가*/
   if(priority_preemption()){
     thread_yield();
   }
@@ -321,7 +319,6 @@ cond_wait (struct condition *cond, struct lock *lock)
   
   sema_init (&waiter.semaphore, 0);
   /* Project 1 */
-  // list_push_back (&cond->waiters, &waiter.elem);
   list_insert_ordered(&cond->waiters, &(waiter.elem), (list_less_func *) sema_priority_list_order, 0); 
 
   lock_release (lock);
@@ -370,11 +367,9 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 bool /*Project 1*/
 sema_priority_list_order(struct list_elem *x, struct list_elem *y, void *aux UNUSED)
 {
-  // x_sema는 list_elem x가 elem으로 들어있는 semaphore_elem 본체이다 
   struct semaphore_elem *x_sema_elem= list_entry(x, struct semaphore_elem, elem);
   struct semaphore_elem *y_sema_elem= list_entry(y, struct semaphore_elem, elem);
 
-  // semaphore_elem의 waiters의 맨 앞 스레드끼리 우선순위 비교 
   struct thread *x_sema_thread=list_entry(list_begin(&(x_sema_elem->semaphore.waiters)), struct thread, elem); 
   struct thread *y_sema_thread=list_entry(list_begin(&(y_sema_elem->semaphore.waiters)), struct thread, elem); 
 

@@ -801,13 +801,9 @@ advanced_recent_cpu(struct thread *t)
   ASSERT(t->nice>=-20 && t->nice<=20);
 
   if(t!=idle_thread){
-    // int recent_cpu=(2*load_avg)/(2*load_avg+1)*recent_cpu+nice; 
     int recent_CPU= add_FP_to_N(mul_FP(div_FP(mul_FP_to_N(load_avg,2),add_FP_to_N(mul_FP_to_N(load_avg,2),1)),t->recent_CPU),t->nice);
-    //printf("nice is %d\n", t->nice);
-    //printf("recent CPU is %d\n", FP_to_N(t->recent_CPU));
-    //printf("load_avg is %d\n", FP_to_N(load_avg));
+    
     t->recent_CPU=recent_CPU;
-    //printf("after recent CPU is %d\n", FP_to_N(t->recent_CPU));
   }
 }
 
@@ -819,7 +815,6 @@ cal_load_avg(void)
     count++;
   }
 
-  // int new_load_avg = add_FP(mul_FP_to_N(div_FP_by_N(N_to_FP(59), 60),load_avg), div_FP_by_N(N_to_FP(count),60));
   int new_load_avg = add_FP(mul_FP(div_FP(N_to_FP(59), N_to_FP(60)), load_avg), mul_FP_to_N(div_FP(N_to_FP(1), N_to_FP(60)), count));
   load_avg=new_load_avg;
 }
