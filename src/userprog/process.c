@@ -31,6 +31,11 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
+  /*project2*/
+  char *save_ptr;
+  char *token;
+  token = strtok_r(file_name," ", &save_ptr);
+
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
@@ -39,7 +44,7 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (token, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -54,6 +59,17 @@ start_process (void *file_name_)
   struct intr_frame if_;
   bool success;
 
+  /*project2*/
+  char *save_ptr;
+  char *token;
+
+  char * argv[16]; // pintos manual 3.3.3 argument passing
+  int argc=0;
+  for (token = strtok_r (file_name, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
+    argv[argc] = token;
+    argc+=1;
+  }
+
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -65,6 +81,9 @@ start_process (void *file_name_)
   palloc_free_page (file_name);
   if (!success) 
     thread_exit ();
+  
+  /*project2*/
+  passing_argument(argv, argc, &if_.esp);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -74,6 +93,12 @@ start_process (void *file_name_)
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
+}
+
+/*project2*/
+void passing_argument(char **aruments, int count, void **esp)
+{
+  
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
