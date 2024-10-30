@@ -84,6 +84,7 @@ start_process (void *file_name_)
   
   /*project2*/
   passing_argument(argv, argc, &if_.esp);
+  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -96,9 +97,47 @@ start_process (void *file_name_)
 }
 
 /*project2*/
-void passing_argument(char **aruments, int count, void **esp)
+void passing_argument(char **arguments, int count, char **esp)
 {
-  
+  char *base = esp;
+  int i;
+  char *arg;
+  size_t len;
+
+  size_t *offset;
+
+  for(i=0; i<count; i++){
+    arg = arguments[count-i-1];
+    len = strlen(arg) + 1;
+    offset[i] = len;
+
+    *esp -= len;
+    memcpy(**esp, arg, len);
+  }
+
+  while((size_t)*esp%4 != 0){ // zero align
+    *esp --;
+    memcpy(**esp, '0', 1);
+  }
+
+  // C standard convention
+  *esp -= sizeof(char*);
+  memcpy(**esp, '0', sizeof(char*));
+
+  for(i=0; i<count; i++){
+    *esp -= sizeof(char*);
+    memcpy(**esp, base-offset[i], sizeof(char*));
+  }
+
+  *esp -= sizeof(char**);
+  memcpy(**esp, arguments, sizeof(char**));
+
+  *esp -= sizeof(int);
+  memcpy(**esp, count, sizeof(int));
+
+  // fake return address
+  *esp -= sizeof(void *);
+  memcpy(**esp, count, sizeof(void *));
 }
 
 /* Waits for thread TID to die and returns its exit status.  If

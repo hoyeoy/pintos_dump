@@ -9,6 +9,6 @@ void process_exit (void);
 void process_activate (void);
 
 /*project2*/
-void passing_argument(char **aruments, int count, void **esp);
+void passing_argument(char **arguments, int count, char **esp);
 
 #endif /* userprog/process.h */
