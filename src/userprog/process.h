@@ -14,5 +14,7 @@ void process_activate (void);
 /*project2*/
 void arg_stk(char ** argv, uint32_t argc, struct intr_frame * if_);
 //void passing_argument(char **arguments, int count, char **esp);
+struct thread *search_pid(int pid);
+void delete_child(struct thread *child);
 
 #endif /* userprog/process.h */

@@ -21,6 +21,36 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
+/*Project 2*/
+struct thread *search_pid(int pid)
+{
+  struct thread *t = thread_current();
+  struct list_elem *curr;
+
+  for(curr=list_begin(&(t->child_list));curr!=list_end(&(t->child_list));curr=list_next(curr))
+  {
+    if(list_entry(curr, struct thread, child_elem)->tid == pid){
+      return list_entry(curr, struct thread, child_elem);
+    }
+  }
+  return;
+}
+
+void
+delete_child(struct thread *child)
+{
+  struct thread *t = thread_current();
+  struct list_elem *curr;
+
+  for(curr=list_begin(&(t->child_list));curr!=list_end(&(t->child_list));curr=list_next(curr))
+  {
+    if(list_entry(curr, struct thread, child_elem) == child){
+      list_remove(curr);
+      palloc_free_page(child);
+    }
+  }
+}
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -99,6 +129,8 @@ start_process (void *file_name_)
   // projext 2 
   // success = load (file_name, &if_.eip, &if_.esp);
   success = load (argv[0], &if_.eip, &if_.esp);
+  thread_current()->is_load = success;
+  sema_up(&(thread_current()->wait_load));
 
   /*project2*/
   printf("passing_argument IN \n");
@@ -109,8 +141,10 @@ start_process (void *file_name_)
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!success) 
+  if (!success){
     thread_exit ();
+  } 
+    
   
 
   /* Start the user process by simulating a return from an

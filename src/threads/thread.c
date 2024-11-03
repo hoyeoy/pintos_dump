@@ -208,6 +208,16 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  #ifdef USERPROG
+  /*Project 2*/
+  t->parent = thread_current();
+  t->is_load = false;
+  t->is_end = false;
+  t->exit_status = -1;
+
+  list_push_back(&(thread_current()->child_list), &(t->child_elem));
+  #endif
+
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -297,15 +307,21 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-#ifdef USERPROG
-  process_exit ();
-#endif
+  // process_exit ();
 
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
   intr_disable ();
   list_remove (&thread_current()->allelem);
+
+  #ifdef USERPROG
+  /*Project 2*/
+  thread_current()->is_end = true;
+  sema_up(&(thread_current()->parent->wait_exit));
+  process_exit ();
+  #endif
+
   thread_current ()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
@@ -526,6 +542,12 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&(t->donation_list));
   t->nice = 0;
   t->recent_CPU = 0;
+  #ifdef USERPROG
+    /*Project 2*/
+    list_init(&(t->child_list));
+    sema_init(&(t->wait_exit),0);
+    sema_init(&(t->wait_load),0);
+  #endif
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -601,7 +623,7 @@ thread_schedule_tail (struct thread *prev)
   if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread) 
     {
       ASSERT (prev != cur);
-      palloc_free_page (prev);
+      // palloc_free_page (prev);
     }
 }
 
