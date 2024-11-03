@@ -82,6 +82,7 @@ start_process (void *file_name_)
     printf(" %s \n", argv[argc]); 
     argc+=1;
   }
+  
   // project 2 1030
   /*char * argv[16]; // pintos manual 3.3.3 argument passing
   int argc=0;
