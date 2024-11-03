@@ -74,14 +74,12 @@ start_process (void *file_name_)
   char *save_ptr;
   char *token;
 
-  char * argv[16]; // pintos manual 3.3.3 argument passing
+  char **argv = palloc_get_page(0);// pintos manual 3.3.3 argument passing
   int argc=0;
   for (token = strtok_r (file_name, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
-    printf("length: %d\n", strlen(token));
-    argv[argc]= (char *)malloc(strlen(token) * sizeof(char));
     argv[argc] = token;
     printf("start_process:");
-    printf(" %s", argv[argc]); 
+    printf(" %s \n", argv[argc]); 
     argc+=1;
   }
   // project 2 1030
@@ -102,15 +100,17 @@ start_process (void *file_name_)
   success = load (argv[0], &if_.eip, &if_.esp);
 
   /*project2*/
+  printf("passing_argument IN \n");
   passing_argument(argv, argc, &if_.esp);
+  printf("passing_argument OUT \n");
+
+  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success) 
     thread_exit ();
   
-  /*project2*/
-  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -122,11 +122,11 @@ start_process (void *file_name_)
   NOT_REACHED ();
 }
 
-/*Project 2 */
 void passing_argument(char **arguments, int count, void **esp)
 {
     char *base=*(char **)esp;  // esp가 가리키는 값을 char *로 사용
     int i;
+    char *arg;
     int len = 0;
 
     size_t offset[count];  // offset 배열을 선언하여 각 인자의 길이를 저장
@@ -170,13 +170,14 @@ void passing_argument(char **arguments, int count, void **esp)
         *(char **)esp -= sizeof(char *);
         printf("%x is esp \n", *(char **)esp);
         printf("%x is base \n", base);
-        printf("%x is base - offset[0] \n", base - offset[0]);
+        printf("%x is base - offset[0] \n", base - offset[i]);
         // char *_address = (char *)malloc(sizeof(char));
         // _address[0] = base - offset[i];
         // memmove(*(char **)esp, _address, sizeof(char *));
         char *_address = (char *)malloc(sizeof(char *));  // 주소값을 저장하기 위해 4바이트(32비트) 또는 8바이트(64비트) 할당
         *(char **)_address = base - offset[i];            // _address에 base - offset[i] 주소값 저장
         memmove(*(char **)esp, _address, sizeof(char *)); // esp가 가리키는 위치에 주소값 복사
+        free(_address);
         // for (int j=0; j< sizeof(char *); j++){
         //   memmove(*(char **)esp, (char *)(base - offset[i])[j], 1);
         //   printf("%x is save byte \n", (char *)(base - offset[i])[j]);
@@ -186,9 +187,12 @@ void passing_argument(char **arguments, int count, void **esp)
 
     printf("test_3 \n");
 
-    // arguments 배열의 시작 주소 삽입 f9 ec 12 
+    // arguments 배열의 시작 주소 삽입
     *(char **)esp -= sizeof(char **);
-    memcpy(*(char **)esp, *(char **)esp, sizeof(char **));
+    char *argv_add = (char *)malloc(sizeof(char *)); // argv 시작 주소
+    *(char **)argv_add=*(char **)esp + 4;
+    memcpy(*(char **)esp, argv_add, sizeof(char **));
+    free(argv_add);
 
     printf("test_4 \n");
 
@@ -206,6 +210,7 @@ void passing_argument(char **arguments, int count, void **esp)
 
     return;
 }
+
 
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
