@@ -31,10 +31,25 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
+  printf("test1");
   /*project2*/
-  char *save_ptr;
-  char *token;
-  token = strtok_r(file_name," ", &save_ptr);
+  // char *save_ptr;
+  // char *token;
+  // char * cmd_line = (char *)malloc(strlen(file_name)+1);
+  // strlcpy(cmd_line, file_name, strlen(file_name)+1);
+  // token = strtok_r(cmd_line," ", &save_ptr);
+  // printf("test1 out");
+  //////////////////////////////////////////
+  // parse file name from command line
+  int len = strlen(file_name) + 1;
+  char * _file_name = (char *)malloc(len);
+  strlcpy(_file_name, file_name, len);
+  char * sptr;
+  _file_name = strtok_r(_file_name, " ", &sptr);
+
+  printf("첫번째 인자 /n");
+  printf(_file_name);
+  /////////////////////////////////////////////
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -44,7 +59,7 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (token, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (_file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -60,30 +75,63 @@ start_process (void *file_name_)
   bool success;
 
   /*project2*/
-  char *save_ptr;
-  char *token;
+  // printf("test2");
+  // char *save_ptr;
+  // char *token;
 
-  char * argv[16]; // pintos manual 3.3.3 argument passing
-  int argc=0;
-  for (token = strtok_r (file_name, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
+  // int argc=0;
+  // char * argv[16]; // pintos manual 3.3.3 argument passing
+  // char * cmd_line = (char *)malloc(strlen(file_name)+1);
+  // strlcpy(cmd_line, file_name, strlen(file_name)+1);
+
+  // for (token = strtok_r (cmd_line, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
+  //   argv[argc] = token;
+  //   argc+=1;
+  // }
+
+  ////////////
+  char * argv[64];
+  int argc = 0;
+
+  int len = strlen(file_name) + 1;
+  char * _file_name = (char *)malloc(len);
+  strlcpy(_file_name, file_name, len);
+  char * sptr;
+  char * token;
+
+  // fill up argv 
+  for( 
+    token = strtok_r(_file_name, " ", &sptr);
+    token != NULL;
+    token = strtok_r(NULL, " ", &sptr)) {
     argv[argc] = token;
-    argc+=1;
+    printf("parsing test /n");
+    printf(argv[argc]);
+    printf("/n");
+    argc += 1;
   }
+///////////////
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (argv[0], &if_.eip, &if_.esp); // 첫번째 인자 수정
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!success) 
+  if (!success)
+    //free(cmd_line); 
     thread_exit ();
   
   /*project2*/
-  passing_argument(argv, argc, &if_.esp);
+  printf("arg_stk go");
+  arg_stk(argv, argc, &if_);
+  printf("arg_stk out");
+  //passing_argument(argv, argc, &if_.esp);
+  //free(cmd_line);
+
   hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* Start the user process by simulating a return from an
@@ -96,8 +144,48 @@ start_process (void *file_name_)
   NOT_REACHED ();
 }
 
+// argument passing
+void arg_stk(char ** argv, uint32_t argc, struct intr_frame * if_){
+  int i;
+  char * arg_ptr[64];
+  
+  // stacking argument string
+  for(i = argc - 1; i > -1; i--) {
+    int arg_len = strlen(argv[i]) + 1;
+    if_->esp -= arg_len;
+    memcpy(if_->esp, argv[i], arg_len);
+    arg_ptr[i] = if_->esp;
+  }
+
+  // aligning word boundary
+  while((unsigned int)if_->esp % 4 != 0) {
+    if_->esp--;
+    *(uint8_t *)if_->esp = 0;
+  }
+  
+  // stacking argv[]
+  if_->esp -= 4;
+  memset(if_->esp, 0, sizeof(char *));
+  for(i = argc - 1; i > -1; i--) {
+    if_->esp -= 4;
+    *(uint32_t *)(if_->esp) = (uint32_t)arg_ptr[i];
+  }
+
+  // stacking argv and argc
+  if_->esp -= 4;
+  *(uint32_t *)(if_->esp) = (uint32_t)(if_->esp + 4);
+  if_->esp -= 4;
+  *(uint32_t *)(if_->esp) = argc;
+
+  // fake return address
+  if_->esp -= 4;
+  memset(if_->esp, 0, sizeof(char *));
+  
+  return;
+}
+
 /*project2*/
-void passing_argument(char **arguments, int count, char **esp)
+/*void passing_argument(char **arguments, int count, char **esp)
 {
   char *base = esp;
   int i;
@@ -138,7 +226,7 @@ void passing_argument(char **arguments, int count, char **esp)
   // fake return address
   *esp -= sizeof(void *);
   memcpy(**esp, count, sizeof(void *));
-}
+}*/
 
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
