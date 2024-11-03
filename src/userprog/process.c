@@ -28,13 +28,20 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
+
   char *fn_copy;
   tid_t tid;
 
   /*project2*/
   char *save_ptr;
   char *token;
-  token = strtok_r(file_name," ", &save_ptr);
+  // project 2 1030
+  char tmp[128];
+  strlcpy(tmp, file_name, strlen(file_name)+1);
+  token = strtok_r(tmp," ", &save_ptr);
+  printf("project2 token:");
+  printf("%s", token);
+  // token = strtok_r(file_name," ", &save_ptr);
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -60,6 +67,10 @@ start_process (void *file_name_)
   bool success;
 
   /*project2*/
+  // project 2 1030
+  /*char tmp[128];
+  strlcpy(tmp, file_name, strlen(file_name)+1);*/
+
   char *save_ptr;
   char *token;
 
@@ -67,15 +78,26 @@ start_process (void *file_name_)
   int argc=0;
   for (token = strtok_r (file_name, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
     argv[argc] = token;
+    printf("start_process:");
+    printf(" %s", argv[argc]); 
     argc+=1;
   }
+  // project 2 1030
+  /*char * argv[16]; // pintos manual 3.3.3 argument passing
+  int argc=0;
+  for (token = strtok_r (tmp, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
+    argv[argc] = token;
+    argc+=1;
+  }*/
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  // projext 2 
+  // success = load (file_name, &if_.eip, &if_.esp);
+  success = load (argv[0], &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -102,7 +124,8 @@ void passing_argument(char **arguments, int count, char **esp)
   char *base = esp;
   int i;
   char *arg;
-  size_t len;
+  // size_t len;
+  int len=0;
 
   size_t *offset;
 
@@ -110,6 +133,10 @@ void passing_argument(char **arguments, int count, char **esp)
     arg = arguments[count-i-1];
     len = strlen(arg) + 1;
     offset[i] = len;
+    /*len = strlen(arg) + 1;
+    offset[i]=malloc(len);
+    memcpy(offset[i], len, len);*/
+    
 
     *esp -= len;
     memcpy(**esp, arg, len);
@@ -117,12 +144,14 @@ void passing_argument(char **arguments, int count, char **esp)
 
   while((size_t)*esp%4 != 0){ // zero align
     *esp --;
-    memcpy(**esp, '0', 1);
+    // memcpy(**esp, '0', 1);
+    memset(**esp, 0, 1);
   }
 
   // C standard convention
   *esp -= sizeof(char*);
-  memcpy(**esp, '0', sizeof(char*));
+  // memcpy(**esp, '0', sizeof(char*));
+  memset(**esp, 0, sizeof(char*));
 
   for(i=0; i<count; i++){
     *esp -= sizeof(char*);
@@ -130,14 +159,16 @@ void passing_argument(char **arguments, int count, char **esp)
   }
 
   *esp -= sizeof(char**);
-  memcpy(**esp, arguments, sizeof(char**));
+  // memcpy(**esp, arguments, sizeof(char**));
+  memcpy(**esp, *esp+4, sizeof(char**));
 
   *esp -= sizeof(int);
   memcpy(**esp, count, sizeof(int));
 
   // fake return address
   *esp -= sizeof(void *);
-  memcpy(**esp, count, sizeof(void *));
+  // memcpy(**esp, count, sizeof(void *));
+  memset(**esp, 0, sizeof(void *));
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
@@ -152,6 +183,10 @@ void passing_argument(char **arguments, int count, char **esp)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  // project 2 
+  for (int i = 0; i < 100000000; i++)
+  {
+  }
   return -1;
 }
 
@@ -501,7 +536,9 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
+      /*project 2*/
         *esp = PHYS_BASE;
+        //*esp = PHYS_BASE-12;
       else
         palloc_free_page (kpage);
     }
