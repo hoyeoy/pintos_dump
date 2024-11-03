@@ -32,7 +32,6 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
-  printf("test1");
   /*project2*/
   char *save_ptr;
   char *token;
@@ -41,7 +40,7 @@ process_execute (const char *file_name)
   strlcpy(tmp, file_name, strlen(file_name)+1);
   token = strtok_r(tmp," ", &save_ptr);
   printf("project2 token:");
-  printf("%s", token);
+  printf("%s\n", token);
   // token = strtok_r(file_name," ", &save_ptr);
 
   /* Make a copy of FILE_NAME.
@@ -52,7 +51,7 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (_file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (token, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -75,34 +74,12 @@ start_process (void *file_name_)
   char *save_ptr;
   char *token;
 
-  // int argc=0;
-  // char * argv[16]; // pintos manual 3.3.3 argument passing
-  // char * cmd_line = (char *)malloc(strlen(file_name)+1);
-  // strlcpy(cmd_line, file_name, strlen(file_name)+1);
-
-  // for (token = strtok_r (cmd_line, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
-  //   argv[argc] = token;
-  //   argc+=1;
-  // }
-
-  ////////////
-  char * argv[64];
-  int argc = 0;
-
-  int len = strlen(file_name) + 1;
-  char * _file_name = (char *)malloc(len);
-  strlcpy(_file_name, file_name, len);
-  char * sptr;
-  char * token;
-
-  // fill up argv 
-  for( 
-    token = strtok_r(_file_name, " ", &sptr);
-    token != NULL;
-    token = strtok_r(NULL, " ", &sptr)) {
+  char **argv = palloc_get_page(0);// pintos manual 3.3.3 argument passing
+  int argc=0;
+  for (token = strtok_r (file_name, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
     argv[argc] = token;
     printf("start_process:");
-    printf(" %s", argv[argc]); 
+    printf(" %s \n", argv[argc]); 
     argc+=1;
   }
   // project 2 1030
@@ -122,15 +99,18 @@ start_process (void *file_name_)
   // success = load (file_name, &if_.eip, &if_.esp);
   success = load (argv[0], &if_.eip, &if_.esp);
 
+  /*project2*/
+  printf("passing_argument IN \n");
+  passing_argument(argv, argc, &if_.esp);
+  printf("passing_argument OUT \n");
+
+  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!success)
-    //free(cmd_line); 
+  if (!success) 
     thread_exit ();
   
-  /*project2*/
-  passing_argument(argv, argc, &if_.esp);
-  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -142,98 +122,95 @@ start_process (void *file_name_)
   NOT_REACHED ();
 }
 
-// argument passing
-void arg_stk(char ** argv, uint32_t argc, struct intr_frame * if_){
-  int i;
-  char * arg_ptr[64];
-  
-  // stacking argument string
-  for(i = argc - 1; i > -1; i--) {
-    int arg_len = strlen(argv[i]) + 1;
-    if_->esp -= arg_len;
-    memcpy(if_->esp, argv[i], arg_len);
-    arg_ptr[i] = if_->esp;
-  }
-
-  // aligning word boundary
-  while((unsigned int)if_->esp % 4 != 0) {
-    if_->esp--;
-    *(uint8_t *)if_->esp = 0;
-  }
-  
-  // stacking argv[]
-  if_->esp -= 4;
-  memset(if_->esp, 0, sizeof(char *));
-  for(i = argc - 1; i > -1; i--) {
-    if_->esp -= 4;
-    *(uint32_t *)(if_->esp) = (uint32_t)arg_ptr[i];
-  }
-
-  // stacking argv and argc
-  if_->esp -= 4;
-  *(uint32_t *)(if_->esp) = (uint32_t)(if_->esp + 4);
-  if_->esp -= 4;
-  *(uint32_t *)(if_->esp) = argc;
-
-  // fake return address
-  if_->esp -= 4;
-  memset(if_->esp, 0, sizeof(char *));
-  
-  return;
-}
-
-/*project2*/
-/*void passing_argument(char **arguments, int count, char **esp)
+void passing_argument(char **arguments, int count, void **esp)
 {
-  char *base = esp;
-  int i;
-  char *arg;
-  // size_t len;
-  int len=0;
+    char *base=*(char **)esp;  // esp가 가리키는 값을 char *로 사용
+    int i;
+    char *arg;
+    int len = 0;
 
-  size_t *offset;
+    size_t offset[count];  // offset 배열을 선언하여 각 인자의 길이를 저장
 
-  for(i=0; i<count; i++){
-    arg = arguments[count-i-1];
-    len = strlen(arg) + 1;
-    offset[i] = len;
-    /*len = strlen(arg) + 1;
-    offset[i]=malloc(len);
-    memcpy(offset[i], len, len);*/
-    
+    printf("test_0 \n");
 
-    *esp -= len;
-    memcpy(**esp, arg, len);
-  }
+    for (i = 0; i < count; i++) {
+        // arg = arguments[count - i - 1];
+        // len = strlen(arg) + 1;
+        len = strlen(arguments[count - i - 1]) + 1;
 
-  while((size_t)*esp%4 != 0){ // zero align
-    *esp --;
-    // memcpy(**esp, '0', 1);
-    memset(**esp, 0, 1);
-  }
+        if (i == 0) {
+            offset[i] = len;
+        } else {
+            offset[i] = offset[i - 1] + len;
+        }
 
-  // C standard convention
-  *esp -= sizeof(char*);
-  // memcpy(**esp, '0', sizeof(char*));
-  memset(**esp, 0, sizeof(char*));
+        printf("%s, len is %d \n", arguments[count - i - 1], len);
+        *(char **)esp -= len;
+        memcpy(*(char **)esp, arguments[count - i - 1], len);  // esp를 직접 역참조하여 메모리에 복사
+    }
 
-  for(i=0; i<count; i++){
-    *esp -= sizeof(char*);
-    memcpy(**esp, base-offset[i], sizeof(char*));
-  }
+    printf("test_1 \n");
 
-  *esp -= sizeof(char**);
-  // memcpy(**esp, arguments, sizeof(char**));
-  memcpy(**esp, *esp+4, sizeof(char**));
+    // 4바이트 정렬
+    while ((uintptr_t)*(char **)esp % 4 != 0) {
+        *(char **)esp -= 1;
+        memset(*(char **)esp, 0, 1);  // 0으로 패딩
+    }
 
-  *esp -= sizeof(int);
-  memcpy(**esp, count, sizeof(int));
+    printf("test_2 \n");
 
-  // fake return address
-  *esp -= sizeof(void *);
-  // memcpy(**esp, count, sizeof(void *));
-  memset(**esp, 0, sizeof(void *));
+    // C 표준 호출 규약에 맞게 널 포인터 삽입
+    *(char **)esp -= sizeof(char *);
+    memset(*(char **)esp, 0, sizeof(char *));
+
+
+
+    // 각 인자의 주소를 역순으로 스택에 푸시
+    for (i = 0; i < count; i++) {
+        *(char **)esp -= sizeof(char *);
+        printf("%x is esp \n", *(char **)esp);
+        printf("%x is base \n", base);
+        printf("%x is base - offset[0] \n", base - offset[i]);
+        // char *_address = (char *)malloc(sizeof(char));
+        // _address[0] = base - offset[i];
+        // memmove(*(char **)esp, _address, sizeof(char *));
+        char *_address = (char *)malloc(sizeof(char *));  // 주소값을 저장하기 위해 4바이트(32비트) 또는 8바이트(64비트) 할당
+        *(char **)_address = base - offset[i];            // _address에 base - offset[i] 주소값 저장
+        memmove(*(char **)esp, _address, sizeof(char *)); // esp가 가리키는 위치에 주소값 복사
+        free(_address);
+        // for (int j=0; j< sizeof(char *); j++){
+        //   memmove(*(char **)esp, (char *)(base - offset[i])[j], 1);
+        //   printf("%x is save byte \n", (char *)(base - offset[i])[j]);
+        //   *(char **)esp -= 1;
+        // }
+    }
+
+    printf("test_3 \n");
+
+    // arguments 배열의 시작 주소 삽입
+    *(char **)esp -= sizeof(char **);
+    char *argv_add = (char *)malloc(sizeof(char *)); // argv 시작 주소
+    *(char **)argv_add=*(char **)esp + 4;
+    memcpy(*(char **)esp, argv_add, sizeof(char **));
+    free(argv_add);
+
+    printf("test_4 \n");
+
+    // count 값을 스택에 저장
+    *(char **)esp -= sizeof(int);
+    memcpy(*(char **)esp, &count, sizeof(int));
+
+    printf("test_4 \n");
+
+    // 가짜 반환 주소
+    *(char **)esp -= sizeof(void *);
+    memset(*(char **)esp, 0, sizeof(void *));
+
+    printf("test_4 \n");
+
+    return;
 }
+
 
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
