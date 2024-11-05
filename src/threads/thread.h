@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/synch.h"
+#include "filesys/file.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -114,7 +115,9 @@ struct thread
     struct semaphore wait_exit;
     struct semaphore wait_load;
     int exit_status;
-
+    
+    struct file *fdTable;
+    int fdMax;
 
     uint32_t *pagedir;                  /* Page directory. */
 #endif

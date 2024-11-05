@@ -7,14 +7,20 @@
 #include "threads/vaddr.h"
 #include "devices/shutdown.h"
 #include <string.h>
+#include "threads/synch.h"
+#include <devices/input.h>
+#include "userprog/process.h"
 
 static void syscall_handler (struct intr_frame *);
 /*Project 2*/
+struct lock f_lock;
+
 
 void
 syscall_init (void) 
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+  lock_init(f_lock);
 }
 
 static void
@@ -45,6 +51,34 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WAIT:
       pop_arguments(f->esp, argv, 1);
       syscall_wait(argv[0]);
+      break;
+    case SYS_OPEN:
+      pop_arguments(f->esp, argv, 1);
+      f->eax = syscall_open(argv[0]);
+      break;
+    case SYS_FILESIZE:
+      pop_arguments(f->esp, argv, 1);
+      f->eax = syscall_filesize(argv[0]);
+      break;
+    case SYS_READ:
+      pop_arguments(f->esp, argv, 3);
+      f->eax = syscall_read(argv[0],argv[1],argv[2]);
+      break;
+    case SYS_WRITE:
+      pop_arguments(f->esp, argv, 3);
+      f->eax = syscall_write(argv[0],argv[1],argv[2]);
+      break;
+    case SYS_SEEK:
+      pop_arguments(f->esp, argv, 2);
+      syscall_seek(argv[0],argv[1]);
+      break;
+    case SYS_TELL:
+      pop_arguments(f->esp, argv, 1);
+      f->eax = syscall_tell(argv[0]);
+      break;
+    case SYS_CLOSE:
+      pop_arguments(f->esp, argv, 1);
+      syscall_close(argv[0]);
       break;
   }
   thread_exit ();
@@ -102,13 +136,81 @@ int syscall_exec(const *cmd_line)
 
 int syscall_wait(int child_tid)
 {
-  struct thread* t = search_pid(child_tid);
+  return process_wait(child_tid);
+}
 
-  if(t==NULL) return -1;
+int syscall_open(const char *file)
+{
+  if(file_open(file->inode)==NULL){
+    return -1;
+  }
+  return process_add_fdTable(file);
+}
 
-  sema_down(&(t->wait_exit));
-  int status = t->exit_status;
-  delete_child(t);
+int syscall_filesize (int fd)
+{
+  struct file *f = process_search_fdTable(fd);
+  if(f==NULL) return -1;
 
-  return status;
+  return file_length(f);
+}
+
+int
+syscall_read (int fd, void *buffer, unsigned size)
+{
+  struct file *f;
+  int i;
+  int output;
+
+  lock_acquire(f_lock);
+  if(fd == 0){
+    for(i=0;i<size;i++){
+      *buffer = input_getc();
+      buffer++;
+    }
+    output = size;
+  }else{
+    f = process_search_fdTable(fd);
+    output = file_read(f, buffer, size);
+  }
+  lock_release(f_lock);
+
+  return output;
+}
+
+int
+syscall_write(int fd, void *buffer, unsigned size)
+{
+  struct file *f;
+  int output;
+
+  lock_acquire(f_lock);
+  if(fd == 1){
+    putbuf(buffer, size);
+    output = size;
+  }else{
+    f = process_search_fdTable(fd);
+    output = file_write(f, buffer, size);
+  }
+  lock_release(f_lock);
+
+  return output;
+}
+
+void
+syscall_seek (int fd, unsigned position)
+{
+  struct file *f = process_search_fdTable(fd);
+  file_seek(f, position);
+}
+
+unsigned syscall_tell (int fd)
+{
+  struct file *f = process_search_fdTable(fd);
+  return file_tell(f);
+}
+
+void syscall_close (int fd)
+{
+  process_remove_fdTable(fd);
 }
