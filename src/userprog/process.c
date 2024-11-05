@@ -104,8 +104,6 @@ process_execute (const char *file_name)
   char tmp[128];
   strlcpy(tmp, file_name, strlen(file_name)+1);
   token = strtok_r(tmp," ", &save_ptr);
-  printf("project2 token:");
-  printf("%s\n", token);
   // token = strtok_r(file_name," ", &save_ptr);
 
   /* Make a copy of FILE_NAME.
@@ -143,8 +141,6 @@ start_process (void *file_name_)
   int argc=0;
   for (token = strtok_r (file_name, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
     argv[argc] = token;
-    printf("start_process:");
-    printf(" %s \n", argv[argc]); 
     argc+=1;
   }
   
@@ -168,11 +164,9 @@ start_process (void *file_name_)
   sema_up(&(thread_current()->wait_load));
 
   /*project2*/
-  printf("passing_argument IN \n");
   passing_argument(argv, argc, &if_.esp);
-  printf("passing_argument OUT \n");
 
-  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+  // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -201,7 +195,6 @@ void passing_argument(char **arguments, int count, void **esp)
 
     size_t offset[count];  // offset 배열을 선언하여 각 인자의 길이를 저장
 
-    printf("test_0 \n");
 
     for (i = 0; i < count; i++) {
         // arg = arguments[count - i - 1];
@@ -214,12 +207,10 @@ void passing_argument(char **arguments, int count, void **esp)
             offset[i] = offset[i - 1] + len;
         }
 
-        printf("%s, len is %d \n", arguments[count - i - 1], len);
         *(char **)esp -= len;
         memcpy(*(char **)esp, arguments[count - i - 1], len);  // esp를 직접 역참조하여 메모리에 복사
     }
 
-    printf("test_1 \n");
 
     // 4바이트 정렬
     while ((uintptr_t)*(char **)esp % 4 != 0) {
@@ -227,7 +218,6 @@ void passing_argument(char **arguments, int count, void **esp)
         memset(*(char **)esp, 0, 1);  // 0으로 패딩
     }
 
-    printf("test_2 \n");
 
     // C 표준 호출 규약에 맞게 널 포인터 삽입
     *(char **)esp -= sizeof(char *);
@@ -238,24 +228,11 @@ void passing_argument(char **arguments, int count, void **esp)
     // 각 인자의 주소를 역순으로 스택에 푸시
     for (i = 0; i < count; i++) {
         *(char **)esp -= sizeof(char *);
-        printf("%x is esp \n", *(char **)esp);
-        printf("%x is base \n", base);
-        printf("%x is base - offset[0] \n", base - offset[i]);
-        // char *_address = (char *)malloc(sizeof(char));
-        // _address[0] = base - offset[i];
-        // memmove(*(char **)esp, _address, sizeof(char *));
         char *_address = (char *)malloc(sizeof(char *));  // 주소값을 저장하기 위해 4바이트(32비트) 또는 8바이트(64비트) 할당
         *(char **)_address = base - offset[i];            // _address에 base - offset[i] 주소값 저장
         memmove(*(char **)esp, _address, sizeof(char *)); // esp가 가리키는 위치에 주소값 복사
         free(_address);
-        // for (int j=0; j< sizeof(char *); j++){
-        //   memmove(*(char **)esp, (char *)(base - offset[i])[j], 1);
-        //   printf("%x is save byte \n", (char *)(base - offset[i])[j]);
-        //   *(char **)esp -= 1;
-        // }
     }
-
-    printf("test_3 \n");
 
     // arguments 배열의 시작 주소 삽입
     *(char **)esp -= sizeof(char **);
@@ -264,19 +241,14 @@ void passing_argument(char **arguments, int count, void **esp)
     memcpy(*(char **)esp, argv_add, sizeof(char **));
     free(argv_add);
 
-    printf("test_4 \n");
-
     // count 값을 스택에 저장
     *(char **)esp -= sizeof(int);
     memcpy(*(char **)esp, &count, sizeof(int));
 
-    printf("test_4 \n");
 
     // 가짜 반환 주소
     *(char **)esp -= sizeof(void *);
     memset(*(char **)esp, 0, sizeof(void *));
-
-    printf("test_4 \n");
 
     return;
 }

@@ -10,6 +10,8 @@
 #include "threads/synch.h"
 #include <devices/input.h>
 #include "userprog/process.h"
+#include "filesys/filesys.h"
+
 
 static void syscall_handler (struct intr_frame *);
 /*Project 2*/
@@ -20,7 +22,7 @@ void
 syscall_init (void) 
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
-  lock_init(f_lock);
+  lock_init(&f_lock);
 }
 
 static void
@@ -141,7 +143,7 @@ int syscall_wait(int child_tid)
 
 int syscall_open(const char *file)
 {
-  if(file_open(file->inode)==NULL){
+  if(filesys_open(file)==NULL){
     return -1;
   }
   return process_add_fdTable(file);
@@ -162,10 +164,10 @@ syscall_read (int fd, void *buffer, unsigned size)
   int i;
   int output;
 
-  lock_acquire(f_lock);
+  lock_acquire(&f_lock);
   if(fd == 0){
     for(i=0;i<size;i++){
-      *buffer = input_getc();
+      *(char *)buffer = input_getc();
       buffer++;
     }
     output = size;
@@ -173,7 +175,7 @@ syscall_read (int fd, void *buffer, unsigned size)
     f = process_search_fdTable(fd);
     output = file_read(f, buffer, size);
   }
-  lock_release(f_lock);
+  lock_release(&f_lock);
 
   return output;
 }
@@ -184,7 +186,7 @@ syscall_write(int fd, void *buffer, unsigned size)
   struct file *f;
   int output;
 
-  lock_acquire(f_lock);
+  lock_acquire(&f_lock);
   if(fd == 1){
     putbuf(buffer, size);
     output = size;
@@ -192,19 +194,19 @@ syscall_write(int fd, void *buffer, unsigned size)
     f = process_search_fdTable(fd);
     output = file_write(f, buffer, size);
   }
-  lock_release(f_lock);
+  lock_release(&f_lock);
 
   return output;
 }
 
 void
-syscall_seek (int fd, unsigned position)
+syscall_seek (int fd, off_t position)
 {
   struct file *f = process_search_fdTable(fd);
   file_seek(f, position);
 }
 
-unsigned syscall_tell (int fd)
+off_t syscall_tell (int fd)
 {
   struct file *f = process_search_fdTable(fd);
   return file_tell(f);

@@ -116,7 +116,7 @@ struct thread
     struct semaphore wait_load;
     int exit_status;
     
-    struct file *fdTable;
+    struct file **fdTable;
     int fdMax;
 
     uint32_t *pagedir;                  /* Page directory. */
