@@ -215,6 +215,11 @@ thread_create (const char *name, int priority,
   t->is_end = false;
   t->exit_status = -1;
 
+  t->fdTable = palloc_get_page(PAL_ZERO);
+  if(t->fdTable == NULL)
+    return TID_ERROR;
+  t->fdMax = 2;
+
   list_push_back(&(thread_current()->child_list), &(t->child_elem));
   #endif
 

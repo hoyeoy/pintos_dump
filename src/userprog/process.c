@@ -51,6 +51,41 @@ delete_child(struct thread *child)
   }
 }
 
+int
+process_add_fdTable (struct file *f)
+{
+  struct thread *t = thread_current();
+  t->fdTable[t->fdMax] = f;
+
+  int pre_fd = t->fdMax;
+  t->fdMax++;
+
+  return pre_fd;
+}
+
+struct file *process_search_fdTable(int fd)
+{
+  struct thread *t = thread_current();
+  if (t->fdTable[fd] == NULL){
+    return NULL;
+  }
+
+  return t->fdTable[fd];
+}
+
+void
+process_remove_fdTable (int fd)
+{
+  struct thread *t = thread_current();
+  if (t->fdTable[fd] == NULL){
+    return NULL;
+  }
+
+  struct file *f = process_search_fdTable(fd);
+  file_close(f);
+  t->fdTable[fd] = NULL;
+}
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -260,10 +295,14 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
   // project 2 
-  for (int i = 0; i < 100000000; i++)
-  {
-  }
-  return -1;
+  struct thread *t = search_pid(child_tid);
+  if(t==NULL) return -1;
+
+  sema_down(&(t->wait_exit));
+  int status = t->exit_status;
+  delete_child(t);
+
+  return status;
 }
 
 /* Free the current process's resources. */
@@ -272,6 +311,12 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  /*Project 2*/
+  for(int i = cur->fdMax; i>1 ; i--){
+    process_remove_fdTable(i);
+  }
+  palloc_free_page(cur->fdTable);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

@@ -17,4 +17,8 @@ void arg_stk(char ** argv, uint32_t argc, struct intr_frame * if_);
 struct thread *search_pid(int pid);
 void delete_child(struct thread *child);
 
+int process_add_fdTable (struct file *f);
+struct file *process_search_fdTable(int fd);
+void process_remove_fdTable (int fd);
+
 #endif /* userprog/process.h */
