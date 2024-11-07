@@ -114,6 +114,7 @@ struct thread
     bool is_end;
     struct semaphore wait_exit;
     struct semaphore wait_load;
+    struct semaphore tmp; // project 2 1107
     int exit_status;
     
     struct file **fdTable;

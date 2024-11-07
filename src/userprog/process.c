@@ -39,16 +39,22 @@ struct thread *search_pid(int pid)
 void
 delete_child(struct thread *child)
 {
+  /* project 2 1107*/
+  printf("delete child start\n"); // reached 
   struct thread *t = thread_current();
   struct list_elem *curr;
 
   for(curr=list_begin(&(t->child_list));curr!=list_end(&(t->child_list));curr=list_next(curr))
   {
+    printf("end %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->tid);
+    printf("for %d\n", list_entry(curr, struct thread, child_elem)->tid); // for for delete main:exit 출력 -> 아직 for 못나갔는데 main delete 된 것 같음 
     if(list_entry(curr, struct thread, child_elem) == child){
       list_remove(curr);
       palloc_free_page(child);
+      printf("delete\n"); // 1번 출력 -> 이후 main:exit(-1) 출력 -> 부모가 자식이 다 exit할 때까지 안 기다리는 거임? 
     }
   }
+  printf("delete child end\n"); // not reached 
 }
 
 int
@@ -166,7 +172,7 @@ start_process (void *file_name_)
   /*project2*/
   passing_argument(argv, argc, &if_.esp);
 
-  // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -267,13 +273,20 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
   // project 2 
+  /* project 2 1107 */
+  printf("process wait function\n"); //reached 
   struct thread *t = search_pid(child_tid);
+ 
+  printf("t is %d\n", *t); // t=3 
   if(t==NULL) return -1;
 
   sema_down(&(t->wait_exit));
+  // printf("process wait function1\n"); // reached <- sema up을 process exit으로 옮겨주니까 됨 
   int status = t->exit_status;
+  printf("process wait function2\n"); // reached 
   delete_child(t);
-
+  // delete_child 내부에서도 printf 잘 찍힘 -> 
+  printf("process wait function3\n"); // not reached 
   return status;
 }
 
@@ -306,6 +319,8 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+  /* project 2 1107*/
+  sema_up(&cur->wait_exit); 
 }
 
 /* Sets up the CPU for running user code in the current
