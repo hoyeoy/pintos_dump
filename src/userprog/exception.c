@@ -150,7 +150,7 @@ page_fault (struct intr_frame *f)
 
 
   /* project 2 1107 */
-  // printf("\nIf any cause: %d %d %d\n", user, not_present, write);
+  //printf("\nIf any cause: %d %d %d\n", user, not_present, write);
   if (user || not_present || write) // if any cause 
   {
    // printf("Page fault func \n");

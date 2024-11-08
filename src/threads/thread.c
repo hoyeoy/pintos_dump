@@ -212,7 +212,6 @@ thread_create (const char *name, int priority,
   /*Project 2*/
   t->parent = thread_current();
   t->is_load = false;
-  t->is_end = false;
   t->exit_status = -1;
 
   t->fdTable = palloc_get_page(PAL_ZERO);
@@ -320,8 +319,7 @@ thread_exit (void)
      when it calls thread_schedule_tail(). */
 
   #ifdef USERPROG
-  /*Project 2*/  
-  thread_current()->is_end = true;
+  /*Project 2*/ 
   /* project 2 1107 */
   // sema_up(&(thread_current()->parent->wait_exit));  
   process_exit ();
@@ -329,11 +327,9 @@ thread_exit (void)
 
   // thread_current ()->status = THREAD_DYING;
   intr_disable ();
-   //list_remove (&thread_current()->allelem);
+  //list_remove (&thread_current()->allelem);
   list_remove (&cur->allelem);
-  // printf("inside thread exit function7 \n"); // reached 
   cur->status = THREAD_DYING; 
-  //printf("inside thread exit function8 \n"); // 여기에 printf 넣으면 thread_current running 아니라고 터짐 
   schedule ();
   
   NOT_REACHED ();
@@ -559,6 +555,7 @@ init_thread (struct thread *t, const char *name, int priority)
     list_init(&(t->child_list));
     sema_init(&(t->wait_exit),0); // 
     sema_init(&(t->wait_load),0); //  
+    sema_init(&(t->wait_zombie),0); //  
    #endif
 
   old_level = intr_disable ();

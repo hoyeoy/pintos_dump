@@ -111,10 +111,10 @@ struct thread
     struct list child_list;
     struct list_elem child_elem;
     bool is_load;
-    bool is_end;
     struct semaphore wait_exit;
     struct semaphore wait_load;
-    struct semaphore tmp; // project 2 1107
+    struct semaphore wait_zombie;
+    // struct semaphore tmp; // project 2 1107
     int exit_status;
     
     struct file **fdTable;
