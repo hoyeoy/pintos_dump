@@ -120,7 +120,9 @@ void syscall_exit(int status)
   struct thread* cur = thread_current();
   cur->exit_status = status;
   
-  printf("%s: exit(%d) \n", cur->name, status);
+  // printf("%s: exit(%d) \n", cur->name, status);
+  /*projext2 1108*/
+  printf("%s: exit(%d)\n", cur->name, status);
   thread_exit();
 }
 
@@ -136,9 +138,16 @@ bool syscall_remove(const char *file)
 
 int syscall_exec(const *cmd_line)
 {
-  int pid = process_execute(cmd_line);
-  struct thread* t = search_pid(pid);
+  int pid = process_execute(cmd_line); // 자식 프로세스 생성 
+  struct thread* t = search_pid(pid); // t= 자식 프로세스 
   
+  /* project 2 1108
+  if (pid == -1)
+  { return -1; }
+  return pid; */ 
+  // Kernel PANIC at ../../lib/kernel/list.c:361 in find_end_of_run(): assertion `a != NULL' failed.
+
+  // projext 2 1108
   sema_down(&(t->wait_load));
   if(t->is_load){
     return pid;

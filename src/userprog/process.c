@@ -303,6 +303,11 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+  /* project 2 1108 */
+  //printf("sema: %d\n", cur->wait_exit);
+  //printf("running tid: %d %d\n", cur->tid, cur->status);
+  sema_up(&cur->wait_exit);
+  //printf("sema2: %d\n", cur->wait_exit);
 
   /*Project 2*/
   for(int i = cur->fdMax; i>1 ; i--){
