@@ -48,7 +48,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_CREATE:
       //////pop_arguments(f->esp, argv, 2);
       if_user_add(f->esp+8); 
-      f->eax = syscall_create(*(const char*)(f->esp+4),*(unsigned*)(f->esp+8));
+      f->eax = syscall_create((const char*)(f->esp+4),*(unsigned int*)(f->esp+8));
       break;
     case SYS_REMOVE:
       //////pop_arguments(f->esp, argv, 1);
@@ -81,13 +81,6 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = syscall_read(*(int*)(f->esp + 4), *(char *)(f->esp + 8), *(unsigned int *)(f->esp + 12));
       break;
     case SYS_WRITE:
-<<<<<<< HEAD
-      pop_arguments(f->esp, argv, 3);
-      /* projext 2 1107*/
-      //f->eax = syscall_write(*(int*)(f->esp + 4), *(char **)(f->esp + 8), *(unsigned *)(f->esp + 12));
-      f->eax = syscall_write((int)*(uint32_t *)(argv[0]), (void *)*(uint32_t *)(argv[1]), (unsigned)*((uint32_t *)(argv[2])));
-      //f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
-=======
       //printf("Write 실행 \n");
       /////pop_arguments(f->esp, argv, 3);
       /* projext 2 1107*/
@@ -100,7 +93,6 @@ syscall_handler (struct intr_frame *f UNUSED)
       //printf("다음 write\n");
       // f->eax = syscall_write(argv[0],argv[1],argv[2]);
       // esp에 20을 더하는 건 4byte*5 (esp로부터 return, argv, argc, ??, ??만큼 올라 가면 argv[0] 나옴)
->>>>>>> ce33147c856d0ea0f3b166bbe6a5200b8dfaa368
       break;
     case SYS_SEEK:
       pop_arguments(f->esp, argv, 2);
@@ -135,14 +127,9 @@ void pop_arguments(void *esp, int *arg, int count)
   char* pointer = (char *)esp + 4;
   for(int i=0;i<count;i++){
     if_user_add(pointer);
-<<<<<<< HEAD
-=======
     // arg[i] = *(int *)pointer;
->>>>>>> ce33147c856d0ea0f3b166bbe6a5200b8dfaa368
     arg[i] = pointer;
     pointer += 4;
-
-    
   }
 }
 
@@ -157,7 +144,7 @@ void syscall_exit(int status)
   thread_exit();
 }
 
-bool syscall_create(const char *file , unsigned size)
+bool syscall_create(const char *file , unsigned int size)
 {
   return filesys_create(file, size);
 }
