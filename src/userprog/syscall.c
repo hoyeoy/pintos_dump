@@ -29,14 +29,10 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   if_user_add(f->esp);
-  //printf("여기까지 오나 \n");
-  //printf("%d is sysnum \n", *(int *)f->esp);
   int argv[3];
 
   /* project 2 1107*/
   //printf("syscall : %d\n",*(uint32_t *)(f->esp));
- 
-
 
   switch(*(int *)f->esp){
     case SYS_HALT:
@@ -77,15 +73,9 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = syscall_read(argv[0],argv[1],argv[2]);
       break;
     case SYS_WRITE:
-      //printf("Write 실행 \n");
       pop_arguments(f->esp, argv, 3);
       /* projext 2 1107*/
-      //printf("%p",f->esp);
-      //printf("is esp now \n");
       f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
-      //printf("다음 write\n");
-      // f->eax = syscall_write(argv[0],argv[1],argv[2]);
-      // esp에 20을 더하는 건 4byte*5 (esp로부터 return, argv, argc, ??, ??만큼 올라 가면 argv[0] 나옴)
       break;
     case SYS_SEEK:
       pop_arguments(f->esp, argv, 2);
@@ -128,7 +118,7 @@ void pop_arguments(void *esp, int *arg, int count)
 void syscall_exit(int status)
 {
   struct thread* cur = thread_current();
-  cur->exit_status=status;
+  cur->exit_status = status;
   
   printf("%s: exit(%d) \n", cur->name, status);
   thread_exit();
