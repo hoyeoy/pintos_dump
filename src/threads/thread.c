@@ -313,22 +313,29 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
   // process_exit ();
+  struct thread * cur = thread_current();
 
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
-  intr_disable ();
-  list_remove (&thread_current()->allelem);
 
   #ifdef USERPROG
-  /*Project 2*/
+  /*Project 2*/  
   thread_current()->is_end = true;
-  sema_up(&(thread_current()->parent->wait_exit));
+  /* project 2 1107 */
+  // sema_up(&(thread_current()->parent->wait_exit));  
   process_exit ();
   #endif
 
-  thread_current ()->status = THREAD_DYING;
+  // thread_current ()->status = THREAD_DYING;
+  intr_disable ();
+   //list_remove (&thread_current()->allelem);
+  list_remove (&cur->allelem);
+  // printf("inside thread exit function7 \n"); // reached 
+  cur->status = THREAD_DYING; 
+  //printf("inside thread exit function8 \n"); // 여기에 printf 넣으면 thread_current running 아니라고 터짐 
   schedule ();
+  
   NOT_REACHED ();
 }
 
@@ -552,6 +559,7 @@ init_thread (struct thread *t, const char *name, int priority)
     list_init(&(t->child_list));
     sema_init(&(t->wait_exit),0);
     sema_init(&(t->wait_load),0);
+    sema_init(&(t->tmp),0); // project 2 1107
   #endif
 
   old_level = intr_disable ();
@@ -653,6 +661,8 @@ schedule (void)
   if (cur != next)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
+  /* project 2 1107*/
+  // printf("schedule funct\n"); //reached 
 }
 
 /* Returns a tid to use for a new thread. */

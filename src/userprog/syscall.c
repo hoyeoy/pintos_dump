@@ -98,6 +98,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 void if_user_add(void *addr)
 {
+  /* project 2 1107 */
+  /* 접근할 주소가 memory와 mapping 되어 있지 않아도 잘못된 메모리 포인터라 죽여야 함 */
   if(is_user_vaddr(addr)){
     return;
   }
@@ -120,6 +122,7 @@ void syscall_exit(int status)
   struct thread* cur = thread_current();
   cur->exit_status=status;
 
+  
   printf("%s: exit(%d) \n", cur->name, status);
   thread_exit();
 }
