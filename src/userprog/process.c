@@ -51,6 +51,7 @@ delete_child(struct thread *child)
     if(list_entry(curr, struct thread, child_elem) == child){
       list_remove(curr);
       //palloc_free_page(child);
+      // 여기서 palloc해버리면 자식이 부모를 기다리지 않음 (???) 어차피 thread.c에서 함
       //printf("delete\n"); // 1번 출력 -> 이후 main:exit(-1) 출력 -> 부모가 자식이 다 exit할 때까지 안 기다리는 거임? 
     }
   }
@@ -179,8 +180,8 @@ start_process (void *file_name_)
   /*project2*/
   passing_argument(argv, argc, &if_.esp);
 
-  // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
-
+  //hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+ 
   sema_up(&(thread_current()->wait_load));
 
   /* If load failed, quit. */

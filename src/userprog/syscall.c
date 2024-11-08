@@ -43,46 +43,57 @@ syscall_handler (struct intr_frame *f UNUSED)
       shutdown_power_off();
       break;
     case SYS_EXIT:
-      pop_arguments(f->esp, argv, 1);
+      ////pop_arguments(f->esp, argv, 1);
       /* project 2 1107*/
+      if_user_add(f->esp+4); 
       syscall_exit(*(int *)(f->esp+4));
       // syscall_exit(argv[0]);
       break;
     case SYS_CREATE:
-      pop_arguments(f->esp, argv, 2);
-      f->eax = syscall_create(argv[0],argv[1]);
+      //////pop_arguments(f->esp, argv, 2);
+      if_user_add(f->esp+8); 
+      f->eax = syscall_create(*(const char*)(f->esp+4),*(unsigned*)(f->esp+8));
       break;
     case SYS_REMOVE:
-      pop_arguments(f->esp, argv, 1);
-      f->eax = syscall_remove(argv[0]);
+      //////pop_arguments(f->esp, argv, 1);
+      if_user_add(f->esp+4); 
+      f->eax = syscall_remove(*(const char*)(f->esp+4));
       break;
     case SYS_EXEC:
-      pop_arguments(f->esp, argv, 1);
-      f->eax = syscall_exec(argv[0]);
+      //////pop_arguments(f->esp, argv, 1);
+      if_user_add(f->esp+4); 
+      f->eax = syscall_exec(*(const char*)(f->esp+4));
       break;
     case SYS_WAIT:
-      pop_arguments(f->esp, argv, 1);
-      syscall_wait(argv[0]);
+      ////pop_arguments(f->esp, argv, 1);
+      if_user_add(f->esp+4); 
+      syscall_wait(*(tid_t*)(f->esp+4));
       break;
     case SYS_OPEN:
-      pop_arguments(f->esp, argv, 1);
-      f->eax = syscall_open(argv[0]);
+      ////pop_arguments(f->esp, argv, 1);
+      if_user_add(f->esp+4); 
+      f->eax = syscall_open(*(const char*)(f->esp+4));
       break;
     case SYS_FILESIZE:
-      pop_arguments(f->esp, argv, 1);
-      f->eax = syscall_filesize(argv[0]);
+      /////pop_arguments(f->esp, argv, 1);
+      if_user_add(f->esp+4); 
+      f->eax = syscall_filesize(*(int*)(f->esp+4));
       break;
     case SYS_READ:
-      pop_arguments(f->esp, argv, 3);
-      f->eax = syscall_read(argv[0],argv[1],argv[2]);
+      ////pop_arguments(f->esp, argv, 3);
+      if_user_add(f->esp+12); 
+      f->eax = syscall_read(*(int*)(f->esp + 4), *(char *)(f->esp + 8), *(unsigned int *)(f->esp + 12));
       break;
     case SYS_WRITE:
       //printf("Write 실행 \n");
-      pop_arguments(f->esp, argv, 3);
+      /////pop_arguments(f->esp, argv, 3);
       /* projext 2 1107*/
       //printf("%p",f->esp);
       //printf("is esp now \n");
-      f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
+      /////f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
+      if_user_add(f->esp+12); 
+      f->eax = syscall_write(*(int*)(f->esp + 4), *(char **)(f->esp + 8), *(unsigned *)(f->esp + 12));
+
       //printf("다음 write\n");
       // f->eax = syscall_write(argv[0],argv[1],argv[2]);
       // esp에 20을 더하는 건 4byte*5 (esp로부터 return, argv, argc, ??, ??만큼 올라 가면 argv[0] 나옴)
@@ -120,7 +131,8 @@ void pop_arguments(void *esp, int *arg, int count)
   char* pointer = (char *)esp + 4;
   for(int i=0;i<count;i++){
     if_user_add(pointer);
-    arg[i] = *(int *)pointer;
+    // arg[i] = *(int *)pointer;
+    arg[i] = pointer;
     pointer += 4;
   }
 }
