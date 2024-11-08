@@ -30,13 +30,20 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
   int argv[3];
 
+  /* project 2 1107*/
+  //printf("syscall : %d\n",*(uint32_t *)(f->esp));
+ 
+
+
   switch(*(int *)f->esp){
     case SYS_HALT:
       shutdown_power_off();
       break;
     case SYS_EXIT:
       pop_arguments(f->esp, argv, 1);
-      syscall_exit(argv[0]);
+      /* project 2 1107*/
+      syscall_exit(*(int *)(f->esp+20));
+      // syscall_exit(argv[0]);
       break;
     case SYS_CREATE:
       pop_arguments(f->esp, argv, 2);
@@ -68,7 +75,10 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case SYS_WRITE:
       pop_arguments(f->esp, argv, 3);
-      f->eax = syscall_write(argv[0],argv[1],argv[2]);
+      /* projext 2 1107*/
+      f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
+      // f->eax = syscall_write(argv[0],argv[1],argv[2]);
+      // esp에 20을 더하는 건 4byte*5 (esp로부터 return, argv, argc, ??, ??만큼 올라 가면 argv[0] 나옴)
       break;
     case SYS_SEEK:
       pop_arguments(f->esp, argv, 2);
@@ -83,7 +93,8 @@ syscall_handler (struct intr_frame *f UNUSED)
       syscall_close(argv[0]);
       break;
   }
-  thread_exit ();
+  /* projext 2 1107*/
+  //thread_exit ();
 }
 
 void if_user_add(void *addr)

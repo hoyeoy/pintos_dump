@@ -557,10 +557,9 @@ init_thread (struct thread *t, const char *name, int priority)
   #ifdef USERPROG
     /*Project 2*/
     list_init(&(t->child_list));
-    sema_init(&(t->wait_exit),0);
-    sema_init(&(t->wait_load),0);
-    sema_init(&(t->tmp),0); // project 2 1107
-  #endif
+    sema_init(&(t->wait_exit),0); // 
+    sema_init(&(t->wait_load),0); //  
+   #endif
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -636,6 +635,7 @@ thread_schedule_tail (struct thread *prev)
   if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread) 
     {
       ASSERT (prev != cur);
+      /* project 1107 file descriptor 삭제를 막음 */
       // palloc_free_page (prev);
     }
 }
