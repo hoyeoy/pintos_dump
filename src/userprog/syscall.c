@@ -42,7 +42,8 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_EXIT:
       pop_arguments(f->esp, argv, 1);
       /* project 2 1107*/
-      syscall_exit(*(int *)(f->esp+20));
+      syscall_exit(*(int *)(f->esp+4));
+      //syscall_exit((int)argv[0]);
       // syscall_exit(argv[0]);
       break;
     case SYS_CREATE:
@@ -76,8 +77,10 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WRITE:
       pop_arguments(f->esp, argv, 3);
       /* projext 2 1107*/
+      /* 이게 맞음 */ 
       f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
-      // f->eax = syscall_write(argv[0],argv[1],argv[2]);
+      // f->eax = syscall_write((int)argv[0],(void *)argv[1],(unsigned int)argv[2]); // 안됨 
+      // f->eax = syscall_write(argv[0],argv[1],argv[2]); // 안됨 
       // esp에 20을 더하는 건 4byte*5 (esp로부터 return, argv, argc, ??, ??만큼 올라 가면 argv[0] 나옴)
       break;
     case SYS_SEEK:
@@ -124,7 +127,9 @@ void syscall_exit(int status)
   cur->exit_status=status;
 
   
-  printf("%s: exit(%d) \n", cur->name, status);
+  // printf("%s: exit(%d) \n", cur->name, status);
+  /*projext2 1108*/
+  printf("%s: exit(%d)\n", cur->name, status);
   thread_exit();
 }
 
@@ -140,9 +145,16 @@ bool syscall_remove(const char *file)
 
 int syscall_exec(const *cmd_line)
 {
-  int pid = process_execute(cmd_line);
-  struct thread* t = search_pid(pid);
+  int pid = process_execute(cmd_line); // 자식 프로세스 생성 
+  struct thread* t = search_pid(pid); // t= 자식 프로세스 
   
+  /* project 2 1108
+  if (pid == -1)
+  { return -1; }
+  return pid; */ 
+  // Kernel PANIC at ../../lib/kernel/list.c:361 in find_end_of_run(): assertion `a != NULL' failed.
+
+  // projext 2 1108
   sema_down(&(t->wait_load));
   if(t->is_load){
     return pid;

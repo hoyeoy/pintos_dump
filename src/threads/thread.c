@@ -209,19 +209,23 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   #ifdef USERPROG
-  /*Project 2*/
+  /*Project 2*/ 
+  // t = 현재 프로세스의 자식 프로세스 
   t->parent = thread_current();
   t->is_load = false;
   t->is_end = false;
   t->exit_status = -1;
+  sema_init(&(t->wait_exit),0); // project 2 1108
+  sema_init(&(t->wait_load),0); // 1108
 
   t->fdTable = palloc_get_page(PAL_ZERO);
   if(t->fdTable == NULL)
     return TID_ERROR;
   t->fdMax = 2;
 
-  list_push_back(&(thread_current()->child_list), &(t->child_elem));
-  #endif
+  // 부모 프로세스의 자식 리스트에 추가 project 2 1108
+  list_push_back(&(thread_current()->child_list), &(t->child_elem));  
+  #endif 
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -320,11 +324,14 @@ thread_exit (void)
      when it calls thread_schedule_tail(). */
 
   #ifdef USERPROG
+  /* project 2 1108*/
   /*Project 2*/  
+ 
   thread_current()->is_end = true;
   /* project 2 1107 */
-  // sema_up(&(thread_current()->parent->wait_exit));  
+  // sema_up(&(thread_current()->parent->wait_exit));  //main 종료되지 않고 멈춤 
   process_exit ();
+  
   #endif
 
   // thread_current ()->status = THREAD_DYING;
@@ -332,6 +339,11 @@ thread_exit (void)
    //list_remove (&thread_current()->allelem);
   list_remove (&cur->allelem);
   // printf("inside thread exit function7 \n"); // reached 
+
+  /* project 2 1108*/
+  /* project 2 1108*/
+  
+
   cur->status = THREAD_DYING; 
   //printf("inside thread exit function8 \n"); // 여기에 printf 넣으면 thread_current running 아니라고 터짐 
   schedule ();
@@ -530,7 +542,7 @@ is_thread (struct thread *t)
 }
 
 /* Does basic initialization of T as a blocked thread named
-   NAME. */
+   NAME. */ 
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
@@ -557,8 +569,8 @@ init_thread (struct thread *t, const char *name, int priority)
   #ifdef USERPROG
     /*Project 2*/
     list_init(&(t->child_list));
-    sema_init(&(t->wait_exit),0); // 
-    sema_init(&(t->wait_load),0); //  
+    //sema_init(&(t->wait_exit),0); // 
+    //sema_init(&(t->wait_load),0); //  
    #endif
 
   old_level = intr_disable ();
@@ -636,7 +648,8 @@ thread_schedule_tail (struct thread *prev)
     {
       ASSERT (prev != cur);
       /* project 1107 file descriptor 삭제를 막음 */
-      // palloc_free_page (prev);
+      palloc_free_page (prev);
+      // 1108 여기서 palloc free page 해야 child를 free할 수 있음 
     }
 }
 
@@ -657,6 +670,8 @@ schedule (void)
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
+
+  
 
   if (cur != next)
     prev = switch_threads (cur, next);
