@@ -28,6 +28,9 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+  if_user_add(f->esp);
+  //printf("여기까지 오나 \n");
+  //printf("%d is sysnum \n", *(int *)f->esp);
   int argv[3];
 
   /* project 2 1107*/
@@ -43,7 +46,10 @@ syscall_handler (struct intr_frame *f UNUSED)
       pop_arguments(f->esp, argv, 1);
       /* project 2 1107*/
       syscall_exit(*(int *)(f->esp+4));
+<<<<<<< HEAD
       //syscall_exit((int)argv[0]);
+=======
+>>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
       // syscall_exit(argv[0]);
       break;
     case SYS_CREATE:
@@ -75,12 +81,21 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = syscall_read(argv[0],argv[1],argv[2]);
       break;
     case SYS_WRITE:
+      //printf("Write 실행 \n");
       pop_arguments(f->esp, argv, 3);
       /* projext 2 1107*/
+<<<<<<< HEAD
       /* 이게 맞음 */ 
       f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
       // f->eax = syscall_write((int)argv[0],(void *)argv[1],(unsigned int)argv[2]); // 안됨 
       // f->eax = syscall_write(argv[0],argv[1],argv[2]); // 안됨 
+=======
+      //printf("%p",f->esp);
+      //printf("is esp now \n");
+      f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
+      //printf("다음 write\n");
+      // f->eax = syscall_write(argv[0],argv[1],argv[2]);
+>>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
       // esp에 20을 더하는 건 4byte*5 (esp로부터 return, argv, argc, ??, ??만큼 올라 가면 argv[0] 나옴)
       break;
     case SYS_SEEK:
@@ -125,7 +140,6 @@ void syscall_exit(int status)
 {
   struct thread* cur = thread_current();
   cur->exit_status=status;
-
   
   // printf("%s: exit(%d) \n", cur->name, status);
   /*projext2 1108*/
@@ -209,20 +223,47 @@ syscall_read (int fd, void *buffer, unsigned size)
 int
 syscall_write(int fd, void *buffer, unsigned size)
 {
-  struct file *f;
-  int output;
-
-  lock_acquire(&f_lock);
-  if(fd == 1){
+    if (fd == STDOUT_FILENO) {
+    lock_acquire(&f_lock);
     putbuf(buffer, size);
-    output = size;
-  }else{
-    f = process_search_fdTable(fd);
-    output = file_write(f, buffer, size);
+    lock_release(&f_lock);
+    return size;
+  } 
+  else {
+    lock_acquire(&f_lock);
+    struct file * f = process_search_fdTable(fd);
+    if(f) {
+      int written = file_write(f, buffer, size);
+      lock_release(&f_lock);
+      return written;
+    }
+    else {
+      lock_release(&f_lock);
+      return 0;
+    } 
   }
-  lock_release(&f_lock);
 
-  return output;
+  // struct file *f;
+  // int output;
+
+  // printf("sys_write 내부 \n");
+
+  // lock_acquire(&f_lock);
+  // if(fd == 1){
+  //   printf("sys_write 내부 1_1 \n");
+  //   putbuf(buffer, size);
+  //   printf("sys_write 내부 1_1 \n");
+  //   output = size;
+  // }else{
+  //   printf("sys_write 내부 1_2 \n");
+  //   f = process_search_fdTable(fd);
+  //   printf("%x is file add \n", f);
+  //   output = file_write(f, buffer, size);
+  //   printf("sys_write 내부 1_2 \n");
+  // }
+  // lock_release(&f_lock);
+
+  // return output;
 }
 
 void

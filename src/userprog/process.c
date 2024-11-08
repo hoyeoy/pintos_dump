@@ -40,12 +40,13 @@ void
 delete_child(struct thread *child)
 {
   /* project 2 1107*/
-  printf("delete child start\n"); // reached 
+  //printf("delete child start\n"); // reached 
   struct thread *t = thread_current();
   struct list_elem *curr;
 
   for(curr=list_begin(&(t->child_list));curr!=list_end(&(t->child_list));curr=list_next(curr))
   {
+<<<<<<< HEAD
     printf("sema %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->tid); // 
     printf("for %d\n", list_entry(curr, struct thread, child_elem)->tid); // for for delete main:exit 출력 -> 아직 for 못나갔는데 main delete 된 것 같음 
     printf("end %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->wait_exit); // 
@@ -55,9 +56,17 @@ delete_child(struct thread *child)
       // 부모한테 신호를 보내기 전에 free page를 하면 안 되는건가? 
       // thread_exit_tail 할 때 free page를 하기 때문 
       printf("delete\n"); // 1번 출력 -> 이후 main:exit(-1) 출력 -> 부모가 자식이 다 exit할 때까지 안 기다리는 거임? 
+=======
+    //printf("end %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->tid);
+    //printf("for %d\n", list_entry(curr, struct thread, child_elem)->tid); // for for delete main:exit 출력 -> 아직 for 못나갔는데 main delete 된 것 같음 
+    if(list_entry(curr, struct thread, child_elem) == child){
+      list_remove(curr);
+      //palloc_free_page(child);
+      //printf("delete\n"); // 1번 출력 -> 이후 main:exit(-1) 출력 -> 부모가 자식이 다 exit할 때까지 안 기다리는 거임? 
+>>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
     }
   }
-  printf("delete child end\n"); // not reached 
+  //printf("delete child end\n"); // not reached 
 }
 
 int
@@ -146,17 +155,23 @@ start_process (void *file_name_)
   char *save_ptr;
   char *token;
 
-  char **argv = palloc_get_page(0);// pintos manual 3.3.3 argument passing
+  // copy file name
+  int len = strlen(file_name) + 1;
+  char * f_name_copy = (char *)malloc(len);
+  strlcpy(f_name_copy, file_name, len);
+
+  char * argv[64];// pintos manual 3.3.3 argument passing
   int argc=0;
-  for (token = strtok_r (file_name, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
+  for (token = strtok_r (f_name_copy, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
     argv[argc] = token;
     argc+=1;
   }
-  
+
+
   // project 2 1030
   /*char * argv[16]; // pintos manual 3.3.3 argument passing
   int argc=0;
-  for (token = strtok_r (tmp, " ", &save_ptr); token != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
+  for (token = strtok_r (tmp, " ", &save_ptr); tken != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
     argv[argc] = token;
     argc+=1;
   }*/
@@ -170,20 +185,23 @@ start_process (void *file_name_)
   // success = load (file_name, &if_.eip, &if_.esp);
   success = load (argv[0], &if_.eip, &if_.esp);
   thread_current()->is_load = success;
-  sema_up(&(thread_current()->wait_load));
 
+ // ASSERT(!(if_.error_code & 0x1));
+  
   /*project2*/
   passing_argument(argv, argc, &if_.esp);
 
-  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+  // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+
+  sema_up(&(thread_current()->wait_load));
 
   /* If load failed, quit. */
+  free(f_name_copy);
   palloc_free_page (file_name);
+  
   if (!success){
     thread_exit ();
   } 
-    
-  
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -277,19 +295,24 @@ process_wait (tid_t child_tid UNUSED)
 {
   // project 2 
   /* project 2 1107 */
-  printf("process wait function\n"); //reached 
+  // printf("process wait function\n"); //reached 
   struct thread *t = search_pid(child_tid);
- 
-  printf("t is %d\n", *t); // t=3 
+  int status;
+  
   if(t==NULL) return -1;
 
+<<<<<<< HEAD
   sema_down(&(t->wait_exit)); // 기꺼이 
   // printf("process wait function1\n"); // reached <- sema up을 process exit으로 옮겨주니까 됨 
   int status = t->exit_status;
   printf("process wait function2\n"); // reached 
+=======
+  sema_down(&(t->wait_exit));
+  status = t->exit_status;
+>>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
   delete_child(t);
-  // delete_child 내부에서도 printf 잘 찍힘 -> 
-  printf("process wait function3\n"); // not reached 
+  /*1108*/
+  sema_up(&(t->wait_zombie));
   return status;
 }
 
@@ -327,9 +350,22 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
+  /*1108*/
+  struct list_elem * e = list_begin(&(cur->child_list));
+  for(; e != list_end(&(cur->child_list)); e = list_next(e)) {
+    struct thread * t = list_entry(e, struct thread, child_elem);
+    sema_up(&(t->wait_zombie));
+  }
+
   /* project 2 1107*/
+<<<<<<< HEAD
   //sema_up(&cur->wait_exit); // main: exit(-1) 이게 맞나? 
   // sema_up(&cur->wait_exit);
+=======
+  sema_up(&(cur->wait_exit)); 
+  sema_down(&(cur->wait_zombie));
+>>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
 }
 
 /* Sets up the CPU for running user code in the current
