@@ -161,20 +161,22 @@ start_process (void *file_name_)
   // success = load (file_name, &if_.eip, &if_.esp);
   success = load (argv[0], &if_.eip, &if_.esp);
   thread_current()->is_load = success;
-  sema_up(&(thread_current()->wait_load));
+  
 
   /*project2*/
   passing_argument(argv, argc, &if_.esp);
 
-  // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+  hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
+
+  sema_up(&(thread_current()->wait_load));
+
+  
   if (!success){
     thread_exit ();
   } 
-    
-  
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in

@@ -28,6 +28,9 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+  if_user_add(f->esp);
+  printf("여기까지 오나 \n");
+  printf("%d is sysnum \n", *(int *)f->esp);
   int argv[3];
 
   switch(*(int *)f->esp){
@@ -67,8 +70,12 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = syscall_read(argv[0],argv[1],argv[2]);
       break;
     case SYS_WRITE:
+      printf("Write 실행 \n");
       pop_arguments(f->esp, argv, 3);
-      f->eax = syscall_write(argv[0],argv[1],argv[2]);
+      // int fd, void *buffer, unsigned size
+      printf("Write 실행 1\n");
+      f->eax = syscall_write((int)argv[0],(void*)argv[1],(unsigned)argv[2]);
+      printf("Write 실행 2\n");
       break;
     case SYS_SEEK:
       pop_arguments(f->esp, argv, 2);
@@ -83,7 +90,10 @@ syscall_handler (struct intr_frame *f UNUSED)
       syscall_close(argv[0]);
       break;
   }
+
+  printf("여기까지 오나 2\n");
   thread_exit ();
+  printf("여기까지 오나 3\n");
 }
 
 void if_user_add(void *addr)
@@ -183,20 +193,47 @@ syscall_read (int fd, void *buffer, unsigned size)
 int
 syscall_write(int fd, void *buffer, unsigned size)
 {
-  struct file *f;
-  int output;
-
-  lock_acquire(&f_lock);
-  if(fd == 1){
+    if (fd == STDOUT_FILENO) {
+    lock_acquire(&f_lock);
     putbuf(buffer, size);
-    output = size;
-  }else{
-    f = process_search_fdTable(fd);
-    output = file_write(f, buffer, size);
+    lock_release(&f_lock);
+    return size;
+  } 
+  else {
+    lock_acquire(&f_lock);
+    struct file * f = process_search_fdTable(fd);
+    if(f) {
+      int written = file_write(f, buffer, size);
+      lock_release(&f_lock);
+      return written;
+    }
+    else {
+      lock_release(&f_lock);
+      return 0;
+    } 
   }
-  lock_release(&f_lock);
 
-  return output;
+  // struct file *f;
+  // int output;
+
+  // printf("sys_write 내부 \n");
+
+  // lock_acquire(&f_lock);
+  // if(fd == 1){
+  //   printf("sys_write 내부 1_1 \n");
+  //   putbuf(buffer, size);
+  //   printf("sys_write 내부 1_1 \n");
+  //   output = size;
+  // }else{
+  //   printf("sys_write 내부 1_2 \n");
+  //   f = process_search_fdTable(fd);
+  //   printf("%x is file add \n", f);
+  //   output = file_write(f, buffer, size);
+  //   printf("sys_write 내부 1_2 \n");
+  // }
+  // lock_release(&f_lock);
+
+  // return output;
 }
 
 void
