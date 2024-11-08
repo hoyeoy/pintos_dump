@@ -47,7 +47,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case SYS_CREATE:
       //////pop_arguments(f->esp, argv, 2);
-      if_user_add(f->esp+8); 
+      if_user_add(f->esp+8);
       f->eax = syscall_create((const char*)(f->esp+4),*(unsigned int*)(f->esp+8));
       break;
     case SYS_REMOVE:

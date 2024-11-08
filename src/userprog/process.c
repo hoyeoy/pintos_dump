@@ -61,6 +61,8 @@ delete_child(struct thread *child)
 int
 process_add_fdTable (struct file *f)
 {
+  if(!f) return -1;
+  
   struct thread *t = thread_current();
   t->fdTable[t->fdMax] = f;
 
