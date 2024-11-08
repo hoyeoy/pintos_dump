@@ -179,14 +179,14 @@ start_process (void *file_name_)
   /*project2*/
   passing_argument(argv, argc, &if_.esp);
 
-  // hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
+  //hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
 
   sema_up(&(thread_current()->wait_load));
-
-  /* If load failed, quit. */
+  
   free(f_name_copy);
   palloc_free_page (file_name);
-  
+
+  /* If load failed, quit. */
   if (!success){
     thread_exit ();
   } 

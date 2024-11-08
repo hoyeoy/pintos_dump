@@ -75,7 +75,9 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WRITE:
       pop_arguments(f->esp, argv, 3);
       /* projext 2 1107*/
-      f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
+      //f->eax = syscall_write(*(int*)(f->esp + 4), *(char **)(f->esp + 8), *(unsigned *)(f->esp + 12));
+      f->eax = syscall_write((int)*(uint32_t *)(argv[0]), (void *)*(uint32_t *)(argv[1]), (unsigned)*((uint32_t *)(argv[2])));
+      //f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
       break;
     case SYS_SEEK:
       pop_arguments(f->esp, argv, 2);
@@ -110,8 +112,10 @@ void pop_arguments(void *esp, int *arg, int count)
   char* pointer = (char *)esp + 4;
   for(int i=0;i<count;i++){
     if_user_add(pointer);
-    arg[i] = *(int *)pointer;
+    arg[i] = pointer;
     pointer += 4;
+
+    
   }
 }
 
