@@ -46,24 +46,12 @@ delete_child(struct thread *child)
 
   for(curr=list_begin(&(t->child_list));curr!=list_end(&(t->child_list));curr=list_next(curr))
   {
-<<<<<<< HEAD
-    printf("sema %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->tid); // 
-    printf("for %d\n", list_entry(curr, struct thread, child_elem)->tid); // for for delete main:exit 출력 -> 아직 for 못나갔는데 main delete 된 것 같음 
-    printf("end %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->wait_exit); // 
-    if(list_entry(curr, struct thread, child_elem) == child){
-      list_remove(curr);
-      // palloc_free_page(child);  
-      // 부모한테 신호를 보내기 전에 free page를 하면 안 되는건가? 
-      // thread_exit_tail 할 때 free page를 하기 때문 
-      printf("delete\n"); // 1번 출력 -> 이후 main:exit(-1) 출력 -> 부모가 자식이 다 exit할 때까지 안 기다리는 거임? 
-=======
     //printf("end %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->tid);
     //printf("for %d\n", list_entry(curr, struct thread, child_elem)->tid); // for for delete main:exit 출력 -> 아직 for 못나갔는데 main delete 된 것 같음 
     if(list_entry(curr, struct thread, child_elem) == child){
       list_remove(curr);
       //palloc_free_page(child);
       //printf("delete\n"); // 1번 출력 -> 이후 main:exit(-1) 출력 -> 부모가 자식이 다 exit할 때까지 안 기다리는 거임? 
->>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
     }
   }
   //printf("delete child end\n"); // not reached 
@@ -301,15 +289,8 @@ process_wait (tid_t child_tid UNUSED)
   
   if(t==NULL) return -1;
 
-<<<<<<< HEAD
-  sema_down(&(t->wait_exit)); // 기꺼이 
-  // printf("process wait function1\n"); // reached <- sema up을 process exit으로 옮겨주니까 됨 
-  int status = t->exit_status;
-  printf("process wait function2\n"); // reached 
-=======
   sema_down(&(t->wait_exit));
   status = t->exit_status;
->>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
   delete_child(t);
   /*1108*/
   sema_up(&(t->wait_zombie));
@@ -323,10 +304,10 @@ process_exit (void)
   struct thread *cur = thread_current ();
   uint32_t *pd;
   /* project 2 1108 */
-  printf("sema: %d\n", cur->wait_exit);
-  printf("running tid: %d %d\n", cur->tid, cur->status);
+  //printf("sema: %d\n", cur->wait_exit);
+  //printf("running tid: %d %d\n", cur->tid, cur->status);
   sema_up(&cur->wait_exit);
-  printf("sema2: %d\n", cur->wait_exit);
+  //printf("sema2: %d\n", cur->wait_exit);
 
   /*Project 2*/
   for(int i = cur->fdMax; i>1 ; i--){
@@ -359,13 +340,8 @@ process_exit (void)
   }
 
   /* project 2 1107*/
-<<<<<<< HEAD
-  //sema_up(&cur->wait_exit); // main: exit(-1) 이게 맞나? 
-  // sema_up(&cur->wait_exit);
-=======
   sema_up(&(cur->wait_exit)); 
   sema_down(&(cur->wait_zombie));
->>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
 }
 
 /* Sets up the CPU for running user code in the current

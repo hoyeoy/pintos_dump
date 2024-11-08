@@ -323,14 +323,7 @@ thread_exit (void)
      when it calls thread_schedule_tail(). */
 
   #ifdef USERPROG
-<<<<<<< HEAD
-  /* project 2 1108*/
-  /*Project 2*/  
- 
-  thread_current()->is_end = true;
-=======
   /*Project 2*/ 
->>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
   /* project 2 1107 */
   // sema_up(&(thread_current()->parent->wait_exit));  //main 종료되지 않고 멈춤 
   process_exit ();
@@ -341,15 +334,6 @@ thread_exit (void)
   intr_disable ();
   //list_remove (&thread_current()->allelem);
   list_remove (&cur->allelem);
-<<<<<<< HEAD
-  // printf("inside thread exit function7 \n"); // reached 
-
-  /* project 2 1108*/
-  /* project 2 1108*/
-  
-
-=======
->>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
   cur->status = THREAD_DYING; 
   schedule ();
   
@@ -574,14 +558,9 @@ init_thread (struct thread *t, const char *name, int priority)
   #ifdef USERPROG
     /*Project 2*/
     list_init(&(t->child_list));
-<<<<<<< HEAD
-    //sema_init(&(t->wait_exit),0); // 
-    //sema_init(&(t->wait_load),0); //  
-=======
     sema_init(&(t->wait_exit),0); // 
     sema_init(&(t->wait_load),0); //  
     sema_init(&(t->wait_zombie),0); //  
->>>>>>> b982f829e84c78fde31c9af45f80dbd25dda5ed9
    #endif
 
   old_level = intr_disable ();
