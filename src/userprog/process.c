@@ -158,7 +158,6 @@ start_process (void *file_name_)
     argc+=1;
   }
 
-
   // project 2 1030
   /*char * argv[16]; // pintos manual 3.3.3 argument passing
   int argc=0;
@@ -295,9 +294,10 @@ process_wait (tid_t child_tid UNUSED)
   sema_down(&(t->wait_exit));
   status = t->exit_status;
   delete_child(t);
+  palloc_free_page(t);
   //printf("%d is status, %d is tid after delete \n");
   /*1108*/
-  sema_up(&(t->wait_zombie));
+  // sema_up(&(t->wait_zombie));
   return status;
 }
 
@@ -310,7 +310,7 @@ process_exit (void)
   /* project 2 1108 */
   //printf("sema: %d\n", cur->wait_exit);
   //printf("running tid: %d %d\n", cur->tid, cur->status);
-  sema_up(&cur->wait_exit);
+  // sema_up(&cur->wait_exit);
   //printf("sema2: %d\n", cur->wait_exit);
 
   /*Project 2*/
@@ -337,18 +337,20 @@ process_exit (void)
     }
 
   /*1108*/
-  struct list_elem * e = list_begin(&(cur->child_list));
-  for(; e != list_end(&(cur->child_list)); e = list_next(e)) {
-    struct thread * t = list_entry(e, struct thread, child_elem);
-    sema_up(&(t->wait_zombie));
-  }
+  // struct list_elem * e = list_begin(&(cur->child_list));
+  // for(; e != list_end(&(cur->child_list)); e = list_next(e)) {
+  //   struct thread * t = list_entry(e, struct thread, child_elem);
+  //   sema_up(&(t->wait_zombie));
+  // }
 
   /* project 2 1109*/
   file_close(cur->executing);
 
   /* project 2 1107*/
   sema_up(&(cur->wait_exit)); 
-  sema_down(&(cur->wait_zombie));
+  // printf("%d is status\n", cur->status);
+  // printf("is end \n");
+  // sema_down(&(cur->wait_zombie));
 }
 
 /* Sets up the CPU for running user code in the current

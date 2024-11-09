@@ -32,7 +32,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   int argv[3];
 
   /* project 2 1107*/
-  //printf("syscall : %d\n",*(uint32_t *)(f->esp));
+  // printf("syscall : %d\n",*(uint32_t *)(f->esp));
 
   switch(*(int *)f->esp){
     case SYS_HALT:

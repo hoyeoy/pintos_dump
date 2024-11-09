@@ -113,7 +113,7 @@ struct thread
     bool is_load;
     struct semaphore wait_exit;
     struct semaphore wait_load;
-    struct semaphore wait_zombie;
+    // struct semaphore wait_zombie;
     // struct semaphore tmp; // project 2 1107
     int exit_status;
     
