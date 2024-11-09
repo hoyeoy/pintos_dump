@@ -120,6 +120,8 @@ struct thread
     struct file **fdTable;
     int fdMax;
 
+    struct file *executing;
+
     uint32_t *pagedir;                  /* Page directory. */
 #endif
 

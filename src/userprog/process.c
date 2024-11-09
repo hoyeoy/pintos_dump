@@ -33,7 +33,7 @@ struct thread *search_pid(int pid)
       return list_entry(curr, struct thread, child_elem);
     }
   }
-  return;
+  return NULL;
 }
 
 void
@@ -177,10 +177,10 @@ start_process (void *file_name_)
   success = load (argv[0], &if_.eip, &if_.esp);
   thread_current()->is_load = success;
 
- // ASSERT(!(if_.error_code & 0x1));
+  // ASSERT(!(if_.error_code & 0x1));
   
   /*project2*/
-  passing_argument(argv, argc, &if_.esp);
+  if (success) passing_argument(argv, argc, &if_.esp);
 
   //hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
  
@@ -295,6 +295,7 @@ process_wait (tid_t child_tid UNUSED)
   sema_down(&(t->wait_exit));
   status = t->exit_status;
   delete_child(t);
+  //printf("%d is status, %d is tid after delete \n");
   /*1108*/
   sema_up(&(t->wait_zombie));
   return status;
@@ -341,6 +342,9 @@ process_exit (void)
     struct thread * t = list_entry(e, struct thread, child_elem);
     sema_up(&(t->wait_zombie));
   }
+
+  /* project 2 1109*/
+  file_close(cur->executing);
 
   /* project 2 1107*/
   sema_up(&(cur->wait_exit)); 
@@ -473,6 +477,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
       goto done; 
     }
 
+  /*project2 1109*/
+  t->executing = file;
+  file_deny_write(file);
+
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
   for (i = 0; i < ehdr.e_phnum; i++) 
@@ -543,7 +551,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  //file_close (file);
   return success;
 }
 

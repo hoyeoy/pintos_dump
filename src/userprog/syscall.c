@@ -63,7 +63,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_WAIT:
       ////pop_arguments(f->esp, argv, 1);
       if_user_add(f->esp+4); 
-      syscall_wait((tid_t*)*(uint32_t *)(f->esp+4)); //수정됨
+      f->eax = syscall_wait((tid_t*)*(uint32_t *)(f->esp+4)); //수정됨
       break;
     case SYS_OPEN:
       ////pop_arguments(f->esp, argv, 1);
@@ -77,7 +77,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case SYS_READ:
       ////pop_arguments(f->esp, argv, 3);
-      if_user_add(f->esp+12); 
+      if_user_add(f->esp+12);
       f->eax = syscall_read(*(int*)(f->esp + 4), (const char *)*(uint32_t *)(f->esp + 8), *(unsigned int *)(f->esp + 12));
       break;
     case SYS_WRITE:
@@ -101,7 +101,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = syscall_tell((int)*(uint32_t *)(f->esp + 4));
       break;
     case SYS_CLOSE:
-      syscall_close((const char *)*(uint32_t *)(f->esp + 8));
+      syscall_close((const char *)*(uint32_t *)(f->esp + 4));
       break;
   }
   /* projext 2 1107*/
@@ -143,6 +143,8 @@ void syscall_exit(int status)
 
 bool syscall_create(const char *file , unsigned int size)
 {
+  if(file == NULL) syscall_exit(-1);
+
   return filesys_create(file, size);
 }
 
@@ -177,10 +179,14 @@ int syscall_wait(int child_tid)
 
 int syscall_open(const char *file)
 {
-  if(filesys_open(file)==NULL){
+  if(file == NULL) return -1;
+
+  struct file* tmp = filesys_open(file);
+
+  if(tmp == NULL){
     return -1;
   }
-  return process_add_fdTable(file);
+  return process_add_fdTable(tmp);
 }
 
 int syscall_filesize (int fd)
@@ -197,6 +203,8 @@ syscall_read (int fd, void *buffer, unsigned size)
   struct file *f;
   int i;
   int output;
+
+  if_user_add(buffer);
 
   lock_acquire(&f_lock);
   if(fd == 0){

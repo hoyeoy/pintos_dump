@@ -221,6 +221,7 @@ thread_create (const char *name, int priority,
   if(t->fdTable == NULL)
     return TID_ERROR;
   t->fdMax = 2;
+  t->executing = NULL;
 
   // 부모 프로세스의 자식 리스트에 추가 project 2 1108
   list_push_back(&(thread_current()->child_list), &(t->child_elem));  
