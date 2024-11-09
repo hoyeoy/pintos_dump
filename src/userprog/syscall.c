@@ -48,27 +48,27 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_CREATE:
       //////pop_arguments(f->esp, argv, 2);
       if_user_add(f->esp+8);
-      f->eax = syscall_create((const char*)(f->esp+4),*(unsigned int*)(f->esp+8));
+      f->eax = syscall_create((const char *)*(uint32_t *)(f->esp + 4), (unsigned)*(uint32_t *)(f->esp + 8));
       break;
     case SYS_REMOVE:
       //////pop_arguments(f->esp, argv, 1);
       if_user_add(f->esp+4); 
-      f->eax = syscall_remove(*(const char*)(f->esp+4));
+      f->eax = syscall_remove((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_EXEC:
       //////pop_arguments(f->esp, argv, 1);
       if_user_add(f->esp+4); 
-      f->eax = syscall_exec(*(const char*)(f->esp+4));
+      f->eax = syscall_exec((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_WAIT:
       ////pop_arguments(f->esp, argv, 1);
       if_user_add(f->esp+4); 
-      syscall_wait(*(tid_t*)(f->esp+4));
+      syscall_wait((tid_t*)*(uint32_t *)(f->esp+4)); //수정됨
       break;
     case SYS_OPEN:
       ////pop_arguments(f->esp, argv, 1);
       if_user_add(f->esp+4); 
-      f->eax = syscall_open(*(const char*)(f->esp+4));
+      f->eax = syscall_open((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_FILESIZE:
       /////pop_arguments(f->esp, argv, 1);
@@ -78,7 +78,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_READ:
       ////pop_arguments(f->esp, argv, 3);
       if_user_add(f->esp+12); 
-      f->eax = syscall_read(*(int*)(f->esp + 4), *(char *)(f->esp + 8), *(unsigned int *)(f->esp + 12));
+      f->eax = syscall_read(*(int*)(f->esp + 4), (const char *)*(uint32_t *)(f->esp + 8), *(unsigned int *)(f->esp + 12));
       break;
     case SYS_WRITE:
       //printf("Write 실행 \n");
@@ -88,23 +88,20 @@ syscall_handler (struct intr_frame *f UNUSED)
       //printf("is esp now \n");
       /////f->eax = syscall_write((int)*(uint32_t *)(f->esp+20), (void *)*(uint32_t *)(f->esp + 24), (unsigned)*((uint32_t *)(f->esp + 28)));
       if_user_add(f->esp+12); 
-      f->eax = syscall_write(*(int*)(f->esp + 4), *(char **)(f->esp + 8), *(unsigned *)(f->esp + 12));
+      f->eax = syscall_write((int)*(uint32_t *)(f->esp + 4), (void *)*(uint32_t *)(f->esp + 8), *(unsigned *)(f->esp + 12));
 
       //printf("다음 write\n");
       // f->eax = syscall_write(argv[0],argv[1],argv[2]);
       // esp에 20을 더하는 건 4byte*5 (esp로부터 return, argv, argc, ??, ??만큼 올라 가면 argv[0] 나옴)
       break;
     case SYS_SEEK:
-      pop_arguments(f->esp, argv, 2);
-      syscall_seek(argv[0],argv[1]);
+      syscall_seek((int)*(uint32_t *)(f->esp + 4),(int)*(uint32_t *)(f->esp + 8));
       break;
     case SYS_TELL:
-      pop_arguments(f->esp, argv, 1);
-      f->eax = syscall_tell(argv[0]);
+      f->eax = syscall_tell((int)*(uint32_t *)(f->esp + 4));
       break;
     case SYS_CLOSE:
-      pop_arguments(f->esp, argv, 1);
-      syscall_close(argv[0]);
+      syscall_close((const char *)*(uint32_t *)(f->esp + 8));
       break;
   }
   /* projext 2 1107*/
