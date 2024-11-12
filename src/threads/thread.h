@@ -113,12 +113,12 @@ struct thread
     bool is_load;
     struct semaphore wait_exit;
     struct semaphore wait_load;
-    struct semaphore wait_zombie;
-    // struct semaphore tmp; // project 2 1107
+
     int exit_status;
     
     struct file **fdTable;
     int fdMax;
+    struct file *executing; // 실행 중인 파일 
 
     uint32_t *pagedir;                  /* Page directory. */
 #endif

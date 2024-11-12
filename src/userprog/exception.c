@@ -149,11 +149,9 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
 
-  /* project 2 1107 */
-  //printf("\nIf any cause: %d %d %d\n", user, not_present, write);
+  /* project 2  */
   if (user || not_present || write) // if any cause 
   {
-   // printf("Page fault func \n");
    syscall_exit(-1);
   }
 
