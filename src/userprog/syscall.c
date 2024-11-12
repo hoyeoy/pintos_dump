@@ -31,19 +31,14 @@ syscall_handler (struct intr_frame *f UNUSED)
   if_user_add(f->esp);
   int argv[3];
 
-  /* project 2 1107*/
-  // printf("syscall : %d\n",*(uint32_t *)(f->esp));
 
   switch(*(int *)f->esp){
     case SYS_HALT:
       shutdown_power_off();
       break;
     case SYS_EXIT:
-      ////pop_arguments(f->esp, argv, 1);
-      /* project 2 1107*/
       if_user_add(f->esp+4); 
       syscall_exit(*(int *)(f->esp+4));
-      // syscall_exit(argv[0]);
       break;
     case SYS_CREATE:
       //////pop_arguments(f->esp, argv, 2);
@@ -161,7 +156,7 @@ int syscall_exec(const *cmd_line)
   /* project 2 1108
   if (pid == -1)
   { return -1; }
-  return pid; */ 
+  return pid; */
   // Kernel PANIC at ../../lib/kernel/list.c:361 in find_end_of_run(): assertion `a != NULL' failed.
 
   // projext 2 1108
@@ -225,47 +220,20 @@ syscall_read (int fd, void *buffer, unsigned size)
 int
 syscall_write(int fd, void *buffer, unsigned size)
 {
-    if (fd == STDOUT_FILENO) {
-    lock_acquire(&f_lock);
+  struct file *f;
+  int output;
+
+  lock_acquire(&f_lock);
+  if(fd == 1){
     putbuf(buffer, size);
-    lock_release(&f_lock);
-    return size;
-  } 
-  else {
-    lock_acquire(&f_lock);
-    struct file * f = process_search_fdTable(fd);
-    if(f) {
-      int written = file_write(f, buffer, size);
-      lock_release(&f_lock);
-      return written;
-    }
-    else {
-      lock_release(&f_lock);
-      return 0;
-    } 
+    output = size;
+  }else{
+    f = process_search_fdTable(fd);
+    output = file_write(f, buffer, size);
   }
+  lock_release(&f_lock);
 
-  // struct file *f;
-  // int output;
-
-  // printf("sys_write 내부 \n");
-
-  // lock_acquire(&f_lock);
-  // if(fd == 1){
-  //   printf("sys_write 내부 1_1 \n");
-  //   putbuf(buffer, size);
-  //   printf("sys_write 내부 1_1 \n");
-  //   output = size;
-  // }else{
-  //   printf("sys_write 내부 1_2 \n");
-  //   f = process_search_fdTable(fd);
-  //   printf("%x is file add \n", f);
-  //   output = file_write(f, buffer, size);
-  //   printf("sys_write 내부 1_2 \n");
-  // }
-  // lock_release(&f_lock);
-
-  // return output;
+  return output;
 }
 
 void
