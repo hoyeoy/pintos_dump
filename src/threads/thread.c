@@ -209,21 +209,20 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   #ifdef USERPROG
-  /*Project 2*/ 
+  /**/ 
   // t = 현재 프로세스의 자식 프로세스 
   t->parent = thread_current();
   t->is_load = false;
   t->exit_status = -1;
-  // sema_init(&(t->wait_exit),0); // project 2 1108
-  // sema_init(&(t->wait_load),0); // 1108
+  sema_init(&(t->wait_exit),0); //  
+  sema_init(&(t->wait_load),0); //  
 
   t->fdTable = palloc_get_page(PAL_ZERO);
   if(t->fdTable == NULL)
     return TID_ERROR;
   t->fdMax = 2;
-  t->executing = NULL;
+  t->executing= NULL; // initialize
 
-  // 부모 프로세스의 자식 리스트에 추가 project 2 1108
   list_push_back(&(thread_current()->child_list), &(t->child_elem));  
   #endif 
 
@@ -325,15 +324,13 @@ thread_exit (void)
 
   #ifdef USERPROG
   /*Project 2*/ 
-  /* project 2 1107 */
-  //sema_up(&(thread_current()->wait_exit));  //main 종료되지 않고 멈춤 
   process_exit ();
   #endif
 
-  // thread_current ()->status = THREAD_DYING;
   intr_disable ();
-  //list_remove (&thread_current()->allelem);
   list_remove (&cur->allelem);
+
+  sema_up(&cur->wait_exit);
   cur->status = THREAD_DYING; 
   schedule ();
   
@@ -556,12 +553,11 @@ init_thread (struct thread *t, const char *name, int priority)
   t->nice = 0;
   t->recent_CPU = 0;
   #ifdef USERPROG
-  /*Project 2*/
-  list_init(&(t->child_list));
-  sema_init(&(t->wait_exit),0); // 
-  sema_init(&(t->wait_load),0); //  
-  // sema_init(&(t->wait_zombie),0); //  
-  #endif
+    /*Project 2*/
+    list_init(&(t->child_list));
+    sema_init(&(t->wait_exit),0); // 
+    sema_init(&(t->wait_load),0); //  
+   #endif
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -637,9 +633,6 @@ thread_schedule_tail (struct thread *prev)
   if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread) 
     {
       ASSERT (prev != cur);
-      /* project 1107 file descriptor 삭제를 막음 */
-      // palloc_free_page (prev);
-      // 1108 여기서 palloc free page 해야 child를 free할 수 있음 
     }
 }
 
@@ -661,13 +654,10 @@ schedule (void)
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
 
-  
 
   if (cur != next)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
-  /* project 2 1107*/
-  // printf("schedule funct\n"); //reached 
 }
 
 /* Returns a tid to use for a new thread. */

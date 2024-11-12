@@ -39,23 +39,16 @@ struct thread *search_pid(int pid)
 void
 delete_child(struct thread *child)
 {
-  /* project 2 1107*/
-  //printf("delete child start\n"); // reached 
+  /* project 2 */
   struct thread *t = thread_current();
   struct list_elem *curr;
 
   for(curr=list_begin(&(t->child_list));curr!=list_end(&(t->child_list));curr=list_next(curr))
   {
-    //printf("end %d\n", list_entry(list_end(&(t->child_list)), struct thread, child_elem)->tid);
-    //printf("for %d\n", list_entry(curr, struct thread, child_elem)->tid); // for for delete main:exit 출력 -> 아직 for 못나갔는데 main delete 된 것 같음 
     if(list_entry(curr, struct thread, child_elem) == child){
       list_remove(curr);
-      //palloc_free_page(child);
-      // 여기서 palloc해버리면 자식이 부모를 기다리지 않음 (???) 어차피 thread.c에서 함
-      //printf("delete\n"); // 1번 출력 -> 이후 main:exit(-1) 출력 -> 부모가 자식이 다 exit할 때까지 안 기다리는 거임? 
-    }
+        }
   }
-  //printf("delete child end\n"); // not reached 
 }
 
 int
@@ -109,12 +102,11 @@ process_execute (const char *file_name)
   /*project2*/
   char *save_ptr;
   char *token;
-  // project 2 1030
+
   char tmp[128];
   strlcpy(tmp, file_name, strlen(file_name)+1);
   token = strtok_r(tmp," ", &save_ptr);
-  // token = strtok_r(file_name," ", &save_ptr);
-
+ 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
@@ -138,11 +130,6 @@ start_process (void *file_name_)
   struct intr_frame if_;
   bool success;
 
-  /*project2*/
-  // project 2 1030
-  /*char tmp[128];
-  strlcpy(tmp, file_name, strlen(file_name)+1);*/
-
   char *save_ptr;
   char *token;
 
@@ -158,13 +145,6 @@ start_process (void *file_name_)
     argc+=1;
   }
 
-  // project 2 1030
-  /*char * argv[16]; // pintos manual 3.3.3 argument passing
-  int argc=0;
-  for (token = strtok_r (tmp, " ", &save_ptr); tken != NULL ;token = strtok_r (NULL, " ", &save_ptr)){
-    argv[argc] = token;
-    argc+=1;
-  }*/
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -172,14 +152,13 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   // projext 2 
-  // success = load (file_name, &if_.eip, &if_.esp);
   success = load (argv[0], &if_.eip, &if_.esp);
   thread_current()->is_load = success;
-
-  // ASSERT(!(if_.error_code & 0x1));
   
-  /*project2*/
-  if (success) passing_argument(argv, argc, &if_.esp);
+  if (success)
+  {
+    passing_argument(argv, argc, &if_.esp);
+  }
 
   //hex_dump(if_.esp, if_.esp, PHYS_BASE - if_.esp, true);
  
@@ -214,8 +193,7 @@ void passing_argument(char **arguments, int count, void **esp)
 
 
     for (i = 0; i < count; i++) {
-        // arg = arguments[count - i - 1];
-        // len = strlen(arg) + 1;
+        
         len = strlen(arguments[count - i - 1]) + 1;
 
         if (i == 0) {
@@ -284,8 +262,6 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
   // project 2 
-  /* project 2 1107 */
-  // printf("process wait function\n"); //reached 
   struct thread *t = search_pid(child_tid);
   int status;
   
@@ -294,10 +270,7 @@ process_wait (tid_t child_tid UNUSED)
   sema_down(&(t->wait_exit));
   status = t->exit_status;
   delete_child(t);
-  palloc_free_page(t);
-  //printf("%d is status, %d is tid after delete \n");
-  /*1108*/
-  // sema_up(&(t->wait_zombie));
+  palloc_free_page(t); 
   return status;
 }
 
@@ -307,11 +280,7 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
-  /* project 2 1108 */
-  //printf("sema: %d\n", cur->wait_exit);
-  //printf("running tid: %d %d\n", cur->tid, cur->status);
-  // sema_up(&cur->wait_exit);
-  //printf("sema2: %d\n", cur->wait_exit);
+  
 
   /*Project 2*/
   for(int i = cur->fdMax; i>1 ; i--){
@@ -334,23 +303,13 @@ process_exit (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
+       
     }
+ 
 
-  /*1108*/
-  // struct list_elem * e = list_begin(&(cur->child_list));
-  // for(; e != list_end(&(cur->child_list)); e = list_next(e)) {
-  //   struct thread * t = list_entry(e, struct thread, child_elem);
-  //   sema_up(&(t->wait_zombie));
-  // }
-
-  /* project 2 1109*/
+  /* projext 2 1109*/
   file_close(cur->executing);
-
-  /* project 2 1107*/
-  sema_up(&(cur->wait_exit)); 
-  // printf("%d is status\n", cur->status);
-  // printf("is end \n");
-  // sema_down(&(cur->wait_zombie));
+ 
 }
 
 /* Sets up the CPU for running user code in the current
@@ -465,6 +424,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+  
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -479,9 +439,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
       goto done; 
     }
 
-  /*project2 1109*/
-  t->executing = file;
-  file_deny_write(file);
+  /* project 2 */
+  t->executing=file; 
+   file_deny_write(file);
 
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
@@ -553,7 +513,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  //file_close (file);
+  /* projet 2 1109*/
+  // file_close (file);
   return success;
 }
 
@@ -680,7 +641,6 @@ setup_stack (void **esp)
       if (success)
       /*project 2*/
         *esp = PHYS_BASE;
-        //*esp = PHYS_BASE-12;
       else
         palloc_free_page (kpage);
     }
