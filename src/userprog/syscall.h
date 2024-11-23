@@ -2,10 +2,11 @@
 #define USERPROG_SYSCALL_H
 #include <stdbool.h>
 #include "filesys/off_t.h"
+#include "vm/page.h"
 
 void syscall_init (void);
 
-void if_user_add(void *addr);
+struct sp_entry *if_user_add(void *addr);
 void syscall_exit(int status);
 bool syscall_create(const char *file , unsigned int size);
 bool syscall_remove(const char *file);
@@ -18,5 +19,9 @@ int syscall_write(int fd, void *buffer, unsigned size);
 void syscall_seek (int fd, off_t position);
 off_t syscall_tell (int fd);
 void syscall_close (int fd);
+
+/*project 3*/
+void is_valid_buffer(void* buffer, unsigned size, void *esp, bool writable);
+void is_valid_str(const char *str);
 
 #endif /* userprog/syscall.h */

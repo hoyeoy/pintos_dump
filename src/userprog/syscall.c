@@ -51,7 +51,9 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = syscall_remove((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_EXEC:
-      if_user_add(f->esp+4); 
+      if_user_add(f->esp+4);
+      /*project 3*/
+      is_valid_str((const char *)*(uint32_t *)(f->esp+4));
       f->eax = syscall_exec((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_WAIT:
@@ -60,7 +62,8 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case SYS_OPEN:
       if_user_add(f->esp+4); 
-
+      /*project 3*/
+      is_valid_str((const char *)*(uint32_t *)(f->esp+4));
       f->eax = syscall_open((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_FILESIZE:
@@ -69,13 +72,15 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case SYS_READ:
       if_user_add(f->esp+12); 
-      
+      /*project 3*/
+      is_valid_buffer((const char *)*(uint32_t *)(f->esp + 8), *(unsigned int *)(f->esp + 12), *(int*)(f->esp + 4), 1);
       f->eax = syscall_read(*(int*)(f->esp + 4), (const char *)*(uint32_t *)(f->esp + 8), *(unsigned int *)(f->esp + 12));
       break;
     case SYS_WRITE:
       if_user_add(f->esp+12); 
+      /*project 3*/
+      is_valid_buffer((const char *)*(uint32_t *)(f->esp + 8), *(unsigned int *)(f->esp + 12), *(int*)(f->esp + 4), 0);
       f->eax = syscall_write((int)*(uint32_t *)(f->esp + 4), (void *)*(uint32_t *)(f->esp + 8), *(unsigned *)(f->esp + 12));
-
       break;
     case SYS_SEEK:
       syscall_seek((int)*(uint32_t *)(f->esp + 4),(int)*(uint32_t *)(f->esp + 8));
@@ -91,13 +96,22 @@ syscall_handler (struct intr_frame *f UNUSED)
   //thread_exit ();
 }
 
-void if_user_add(void *addr)
+// void if_user_add(void *addr)
+// {
+//   /* project 2  */
+//   if(is_user_vaddr(addr)){
+//     return;
+//   }
+//   syscall_exit(-1);
+// }
+
+/*project 3*/
+struct sp_entry *if_user_add(void *addr)
 {
-  /* project 2  */
-  if(is_user_vaddr(addr)){
-    return;
+  if(addr < (void *)0x08048000 || addr >= (void *)0xc0000000){
+    syscall_exit(-1);
   }
-  syscall_exit(-1);
+  return find_spe(addr);
 }
 
 void syscall_exit(int status)
@@ -179,8 +193,6 @@ syscall_read (int fd, void *buffer, unsigned size)
   struct file *f;
   int i;
   int output;
-
-  if_user_add(buffer);
     
   lock_acquire(&f_lock);
   if(fd == 0){
@@ -203,7 +215,6 @@ syscall_write(int fd, void *buffer, unsigned size)
 {
   struct file *f;
   int output;
-
  
   lock_acquire(&f_lock);
   if(fd == 1){
@@ -234,4 +245,25 @@ off_t syscall_tell (int fd)
 void syscall_close (int fd)
 {
   process_remove_fdTable(fd);
+}
+
+void
+is_valid_buffer(void* buffer, unsigned size, void *esp, bool writable)
+{
+  if_user_add(buffer);
+  if_user_add(buffer + size);
+
+  for(int i = 0; i<size; i++) 
+  {
+    struct sp_entry *temp = find_spe(buffer+i);
+    if(writable && (temp->writable != true)) syscall_exit(-1); // if buffer에 write 수행
+  }
+}
+
+void
+is_valid_str(const char *str)
+{
+  for(int i=0;i<strlen(str);i++){
+    if_user_add(str+i);
+  }
 }

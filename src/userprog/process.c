@@ -17,6 +17,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "vm/page.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -154,6 +155,9 @@ start_process (void *file_name_)
   // projext 2 
   success = load (argv[0], &if_.eip, &if_.esp);
   thread_current()->is_load = success;
+
+  /*project 3*/
+  sp_table_init(&thread_current()->sp_table);
   
   if (success)
   {
@@ -287,6 +291,9 @@ process_exit (void)
     process_remove_fdTable(i);
   }
   palloc_free_page(cur->fdTable);
+
+  /*project 3*/
+  hash_destroy(&(cur->sp_table), spt_destructor);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -598,25 +605,36 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
-        return false;
+      // /* Get a page of memory. */
+      // uint8_t *kpage = palloc_get_page (PAL_USER);
+      // if (kpage == NULL)
+      //   return false;
 
-      /* Load this page. */
-      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
+      // /* Load this page. */
+      // if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
+      //   {
+      //     palloc_free_page (kpage);
+      //     return false; 
+      //   }
+      // memset (kpage + page_read_bytes, 0, page_zero_bytes);
 
-      /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, writable)) 
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
+      // /* Add the page to the process's address space. */
+      // if (!install_page (upage, kpage, writable)) 
+      //   {
+      //     palloc_free_page (kpage);
+      //     return false; 
+      //   }
+
+      /*project 3*/
+      struct sp_entry *spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
+      spe->type = VM_BIN;
+      spe->is_loaded = false;
+      spe->file = file_reopen(file); // why?
+      spe->offset = ofs;
+      spe->read_bytes = read_bytes;
+      spe->zero_bytes = zero_bytes;
+
+      insert_spe(&(thread_current()->sp_table), spe);
 
       /* Advance. */
       read_bytes -= page_read_bytes;
@@ -644,6 +662,14 @@ setup_stack (void **esp)
       else
         palloc_free_page (kpage);
     }
+
+    /*project 3*/
+    struct sp_entry *spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
+    spe->vaddr = ((uint8_t *) PHYS_BASE) - PGSIZE;
+    spe->type = VM_ANON;
+    spe->is_loaded = true;
+    insert_spe(&(thread_current()->sp_table), spe);
+
   return success;
 }
 
@@ -665,4 +691,22 @@ install_page (void *upage, void *kpage, bool writable)
      address, then map our page there. */
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
+}
+
+bool
+page_fault_handler(struct sp_entry *spe)
+{
+  struct frame_table_entry *frame = frame_alloc(PAL_USER);
+  frame->spe = spe;
+
+  if(spe->type == VM_BIN){
+    load_file(frame->kadd, spe);
+  }
+  // else{
+
+  // }
+  bool success = install_page(spe->vaddr, frame->kadd, spe->writable);
+  if(success) spe->is_loaded = true;
+
+  return success;
 }

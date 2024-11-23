@@ -5,6 +5,7 @@
 //test
 #include "threads/interrupt.h"
 #include "userprog/syscall.h"
+#include "vm/page.h"
 
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);
@@ -20,5 +21,6 @@ void delete_child(struct thread *child);
 int process_add_fdTable (struct file *f);
 struct file *process_search_fdTable(int fd);
 void process_remove_fdTable (int fd);
+bool page_fault_handler(struct sp_entry *spe);
 
 #endif /* userprog/process.h */
