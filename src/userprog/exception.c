@@ -150,10 +150,10 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
 
-/*project 3*/
-if(not_present == false){
-   syscall_exit(-1);
-} else{
+   /*project 3*/
+   if(not_present == false){
+      syscall_exit(-1);
+   } else{
    struct sp_entry *spe = find_spe(fault_addr);
 
    if(spe!=NULL){

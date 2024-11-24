@@ -30,8 +30,10 @@ bool
 insert_spe (struct hash *sp_table, struct sp_entry *spe)
 {
     // 1124 
-    bool result = true; 
-    if (hash_insert(sp_table, &(spe->elem))==NULL) result=true; 
+    bool result = false; 
+    if (hash_insert(sp_table, &(spe->elem))==NULL) {
+        result=true; 
+    }
     return result; 
     //return hash_find(sp_table, spe)!=NULL;
 }
@@ -92,7 +94,22 @@ frame_alloc(enum palloc_flags flag)
 bool
 load_file(void* kadd, struct sp_entry *spe)
 {
-    // if(!file_read_at(spe->file, kadd, spe->read_bytes, spe->offset)) return false;
+    // size_t read_bytes;
+    // file_seek(spe->file, spe->offset);
+    // read_bytes = file_read(spe->file, kadd, spe->read_bytes);
+
+    // // printf("read %d bytes\n", read_bytes);
+
+    // if(read_bytes == spe->read_bytes) {
+    //     memset(kadd + read_bytes, 0, spe->zero_bytes); // zero-ing out empty area
+    //     return true;
+    // }
+    // else {
+    //     return false; // target->read_bytes is always smaller than page size
+    // }
+
+    //////////////////////////////////////
+    if(!file_read_at(spe->file, kadd, spe->read_bytes, spe->offset)) return false;
     unsigned check = file_read_at(spe->file, kadd, spe->read_bytes, spe->offset);
     if(check < spe->read_bytes) return false;
 

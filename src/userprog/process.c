@@ -639,13 +639,15 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       struct sp_entry *spe = malloc(sizeof(struct sp_entry)); //1124
       spe->type = VM_BIN;
       spe->is_loaded = false;
-      spe->file = file_reopen(file); // why?
+      spe->file = file; // why?
+      //spe->file = file_reopen(file); // why?
       spe->offset = ofs;
       // spe->read_bytes = read_bytes;
       // spe->zero_bytes = zero_bytes;
+      spe->writable = writable ;
       spe->read_bytes = page_read_bytes;
       spe->zero_bytes = page_zero_bytes;
-      spe->vaddr = upage; // add
+      spe->vaddr = (void *)upage; // add
 
       // printf("load3\n"); //1124
       insert_spe(&(thread_current()->sp_table), spe); // 1124
@@ -665,29 +667,51 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp) 
 {
-  uint8_t *kpage;
+  struct frame_table_entry *kpage;
   bool success = false;
+  kpage = frame_alloc (PAL_USER | PAL_ZERO);
+  if (kpage != NULL)
+  {
+  success = install_page (pg_round_down(((uint8_t *) PHYS_BASE) - PGSIZE), kpage->kadd, true);
+  if (success){
+    *esp = PHYS_BASE;
+  }
+  else{
+    palloc_free_page(kpage->kadd);
+  }
+  }
+  struct sp_entry* check = (struct sp_entry *)malloc(sizeof(struct sp_entry));
+  check->vaddr = pg_round_down(((uint8_t *) PHYS_BASE) - PGSIZE);
+  check->is_loaded = true;
+  check->writable = true;
+  check->type = VM_ANON;
+  kpage->spe = check;
+  bool success_insert = insert_spe(&(thread_current()->sp_table), check);
+  return success_insert;
 
-  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  if (kpage != NULL) 
-    {
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success)
-      /*project 2*/
-        *esp = PHYS_BASE;
-      else
-        palloc_free_page (kpage);
-    }
+  // uint8_t *kpage;
+  // bool success = false;
 
-    /*project 3*/
-    struct sp_entry *spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
-    spe->vaddr = ((uint8_t *) PHYS_BASE) - PGSIZE;
-    spe->type = VM_ANON;
-    spe->is_loaded = true;
-    insert_spe(&(thread_current()->sp_table), spe);
+  // kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  // if (kpage != NULL) 
+  //   {
+  //     success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
+  //     if (success)
+  //     /*project 2*/
+  //       *esp = PHYS_BASE;
+  //     else
+  //       palloc_free_page (kpage);
+  //   }
+
+  //   /*project 3*/
+  //   struct sp_entry *spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
+  //   spe->vaddr = ((uint8_t *) PHYS_BASE) - PGSIZE;
+  //   spe->type = VM_ANON;
+  //   spe->is_loaded = true;
+  //   insert_spe(&(thread_current()->sp_table), spe);
 
 
-  return success;
+  // return success;
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel
@@ -714,16 +738,17 @@ bool
 page_fault_handler(struct sp_entry *spe)
 {
   struct frame_table_entry *frame = frame_alloc(PAL_USER);
+  bool success=false;
   frame->spe = spe;
 
   if(spe->type == VM_BIN){
     load_file(frame->kadd, spe);
-  }
-  // else{
 
-  // }
-  bool success = install_page(spe->vaddr, frame->kadd, spe->writable);
-  if(success) spe->is_loaded = true;
+    success = install_page(spe->vaddr, frame->kadd, spe->writable);
+    if(success) {
+      spe->is_loaded = true;
+    }
+  }
 
   return success;
 }
