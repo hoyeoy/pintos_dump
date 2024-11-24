@@ -110,6 +110,7 @@ struct sp_entry *if_user_add(void *addr)
 {
   if(addr < (void *)0x08048000 || addr >= (void *)0xc0000000){
     syscall_exit(-1);
+    return NULL; // add 
   }
   return find_spe(addr);
 }

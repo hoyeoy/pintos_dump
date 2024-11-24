@@ -28,13 +28,15 @@ struct sp_entry {
 	bool is_loaded;
 	struct file *file;
 
-    struct list_elem mmap_elem;
+    struct list_elem mmap_elem; // memory mapped file
 	
 	size_t offset;
 	size_t read_bytes;
 	size_t zero_bytes;
+
+	// size_t swap_slot; 
 	
-	struct hash_elem elem;
+	struct hash_elem elem; // hash table element 
 };
 
 void sp_table_init(struct hash *sp_table);
@@ -47,6 +49,7 @@ void spt_destroy (struct hash *sp_table);
 void spt_destructor(struct hash_elem *elem, void *aux);
 struct frame_table_entry *frame_alloc(enum palloc_flags flag);
 bool load_file(void* kadd, struct sp_entry *spe);
+void f_table_init(void); //1124
 
 
 #endif /* vm/page.h */

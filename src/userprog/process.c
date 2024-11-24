@@ -18,6 +18,8 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "vm/page.h"
+#include <hash.h>
+#include <list.h>
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -146,6 +148,9 @@ start_process (void *file_name_)
     argc+=1;
   }
 
+  /*project 3*/
+  // spt_destroy (&thread_current()->sp_table);
+  sp_table_init(&(thread_current()->sp_table));
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -154,10 +159,10 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   // projext 2 
   success = load (argv[0], &if_.eip, &if_.esp);
-  thread_current()->is_load = success;
+  thread_current()->is_load = success; //1124
 
   /*project 3*/
-  sp_table_init(&thread_current()->sp_table);
+  // sp_table_init(&thread_current()->sp_table);
   
   if (success)
   {
@@ -424,6 +429,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   process_activate ();
 
+  // printf("load1\n");
+
   /* Open executable file. */
   file = filesys_open (file_name);
   if (file == NULL) 
@@ -592,10 +599,12 @@ static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable) 
 {
+  // printf("load1\n"); //1124
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
 
+  // printf("load2\n"); //1124
   file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
@@ -626,19 +635,26 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       //   }
 
       /*project 3*/
-      struct sp_entry *spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
+      // struct sp_entry *spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
+      struct sp_entry *spe = malloc(sizeof(struct sp_entry)); //1124
       spe->type = VM_BIN;
       spe->is_loaded = false;
       spe->file = file_reopen(file); // why?
       spe->offset = ofs;
-      spe->read_bytes = read_bytes;
-      spe->zero_bytes = zero_bytes;
+      // spe->read_bytes = read_bytes;
+      // spe->zero_bytes = zero_bytes;
+      spe->read_bytes = page_read_bytes;
+      spe->zero_bytes = page_zero_bytes;
+      spe->vaddr = upage; // add
 
-      insert_spe(&(thread_current()->sp_table), spe);
-
+      // printf("load3\n"); //1124
+      insert_spe(&(thread_current()->sp_table), spe); // 1124
+      // hash_insert(&(thread_current()->sp_table), &(spe->elem)); //1124
+      // printf("load4\n"); //1124
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
+      ofs += page_read_bytes;// add
       upage += PGSIZE;
     }
   return true;
@@ -669,6 +685,7 @@ setup_stack (void **esp)
     spe->type = VM_ANON;
     spe->is_loaded = true;
     insert_spe(&(thread_current()->sp_table), spe);
+
 
   return success;
 }

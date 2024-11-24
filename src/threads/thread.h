@@ -108,24 +108,23 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     /*Project 2*/
-    struct thread *parent;
-    struct list child_list;
-    struct list_elem child_elem;
-    bool is_load;
-    struct semaphore wait_exit;
-    struct semaphore wait_load;
-    int exit_status;
-    
-    struct file **fdTable;
-    int fdMax;
-    struct file *executing; // 실행 중인 파일 
-
-
     uint32_t *pagedir;                  /* Page directory. */
 #endif
 
    /*project 3*/
-   struct hash *sp_table;
+   struct thread *parent;
+   struct list child_list;
+   struct list_elem child_elem;
+   bool is_load;
+   struct semaphore wait_exit;
+   struct semaphore wait_load;
+   int exit_status;
+    
+   struct file **fdTable;
+   int fdMax;
+   struct file *executing; // 실행 중인 파일 
+
+   struct hash sp_table;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

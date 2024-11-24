@@ -1,7 +1,7 @@
 #include "vm/page.h"
 
 struct list frame_table;
-struct frame_table_entry current_clock;
+struct frame_table_entry *current_clock;
 
 void 
 sp_table_init(struct hash *sp_table)
@@ -14,7 +14,7 @@ sp_hash_func(const struct hash_elem *e,void *aux)
 {
     struct sp_entry *temp = hash_entry(e, struct sp_entry, elem);
 
-    return hash_int(temp->vaddr);
+    return hash_int((int)(temp->vaddr));
 }
 
 static bool 
@@ -23,15 +23,17 @@ sp_less_func (const struct hash_elem *a, const struct hash_elem *b)
     struct sp_entry *temp1 = hash_entry(a, struct sp_entry, elem);
     struct sp_entry *temp2 = hash_entry(b, struct sp_entry, elem);
 
-    return temp1->vaddr < temp2->vaddr;
+    return (temp1->vaddr < temp2->vaddr);
 }
 
 bool 
 insert_spe (struct hash *sp_table, struct sp_entry *spe)
 {
-    hash_insert(sp_table, spe);
-
-    return hash_find(sp_table, spe)!=NULL;
+    // 1124 
+    bool result = true; 
+    if (hash_insert(sp_table, &(spe->elem))==NULL) result=true; 
+    return result; 
+    //return hash_find(sp_table, spe)!=NULL;
 }
 
 bool 
@@ -49,9 +51,8 @@ sp_entry *find_spe (void *vaddr)
     struct sp_entry temp;
     temp.vaddr = pg_num;
 
-    struct hash *table = thread_current()->sp_table;
+    struct hash *table = &(thread_current()->sp_table);
     struct hash_elem *target = hash_find(table, &temp.elem);
-    if(target == NULL) return NULL;
     
     return hash_entry(target, struct sp_entry, elem);
 }
@@ -97,4 +98,11 @@ load_file(void* kadd, struct sp_entry *spe)
 
     memset(kadd+spe->read_bytes, 0, spe->zero_bytes);
     return true;
+}
+
+void
+f_table_init(void) //1124
+{
+    list_init(&frame_table);
+    current_clock = NULL;
 }
