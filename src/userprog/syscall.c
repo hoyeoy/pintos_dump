@@ -32,8 +32,10 @@ syscall_handler (struct intr_frame *f UNUSED)
   if_user_add(f->esp);
   int argv[3];
 
-  /* project 2 */
+  // printf("syscall num is %d \n", *(int *)f->esp);
+  // printf("assr is %X \n", f->esp+4);
 
+  /* project 2 */
   switch(*(int *)f->esp){
     case SYS_HALT:
       shutdown_power_off();
@@ -43,6 +45,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       syscall_exit(*(int *)(f->esp+4));
       break;
     case SYS_CREATE:
+      
       if_user_add(f->esp+8);
       f->eax = syscall_create((const char *)*(uint32_t *)(f->esp + 4), (unsigned)*(uint32_t *)(f->esp + 8));
       break;
@@ -53,7 +56,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_EXEC:
       if_user_add(f->esp+4);
       /*project 3*/
-      is_valid_str((const char *)*(uint32_t *)(f->esp+4));
+      //is_valid_str((const char *)*(uint32_t *)(f->esp+4));
       f->eax = syscall_exec((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_WAIT:
@@ -63,7 +66,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_OPEN:
       if_user_add(f->esp+4); 
       /*project 3*/
-      is_valid_str((const char *)*(uint32_t *)(f->esp+4));
+      //is_valid_str((const char *)*(uint32_t *)(f->esp+4));
       f->eax = syscall_open((const char *)*(uint32_t *)(f->esp+4));
       break;
     case SYS_FILESIZE:
@@ -110,9 +113,14 @@ struct sp_entry *if_user_add(void *addr)
 {
   if(addr < (void *)0x08048000 || addr >= (void *)0xc0000000){
     syscall_exit(-1);
-    return NULL; // add 
+    // return NULL; // add 
   }
-  return find_spe(addr);
+
+  struct sp_entry *spe = find_spe(addr);
+  if(spe==NULL) syscall_exit(-1);
+  //printf("is loaded %d \n", spe->is_loaded);
+
+  return spe;
 }
 
 void syscall_exit(int status)
@@ -127,10 +135,13 @@ void syscall_exit(int status)
 
 bool syscall_create(const char *file , unsigned int size)
 {
+  if_user_add(file);
   if (*file==NULL) // create-null test
   {
+    //ASSERT(0);
     syscall_exit(-1);
   }
+
   return filesys_create(file, size);
 }
 
@@ -141,6 +152,8 @@ bool syscall_remove(const char *file)
 
 int syscall_exec(const *cmd_line)
 {
+  if_user_add(cmd_line);
+
   tid_t tmp = process_execute(cmd_line); 
   if (tmp==TID_ERROR) // exec missing test case 
   {
@@ -164,6 +177,8 @@ int syscall_wait(int child_tid)
 
 int syscall_open(const char *file)
 {
+  if_user_add(file);
+
   if (file==NULL)
   {
     return -1;

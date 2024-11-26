@@ -55,8 +55,10 @@ sp_entry *find_spe (void *vaddr)
 
     struct hash *table = &(thread_current()->sp_table);
     struct hash_elem *target = hash_find(table, &temp.elem);
-    
-    return hash_entry(target, struct sp_entry, elem);
+    if(target!=NULL){
+        return hash_entry(target, struct sp_entry, elem);
+    }
+    return NULL;
 }
 
 void 

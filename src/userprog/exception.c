@@ -149,7 +149,7 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-
+   //printf("pagefault occur\n");
    /*project 3*/
    if(not_present == false){
       syscall_exit(-1);
