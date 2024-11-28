@@ -96,7 +96,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
   }
   /* projext 2 1107*/
-  //thread_exit ();
+  // thread_exit ();
 }
 
 // void if_user_add(void *addr)
@@ -209,6 +209,10 @@ syscall_read (int fd, void *buffer, unsigned size)
   struct file *f;
   int i;
   int output;
+
+  if (fd <2 || fd > thread_current()->fdMax)
+  { return ; }
+
     
   lock_acquire(&f_lock);
   if(fd == 0){
@@ -231,7 +235,7 @@ syscall_write(int fd, void *buffer, unsigned size)
 {
   struct file *f;
   int output;
- 
+
   lock_acquire(&f_lock);
   if(fd == 1){
     putbuf(buffer, size);
@@ -260,6 +264,9 @@ off_t syscall_tell (int fd)
 
 void syscall_close (int fd)
 {
+  if (fd <2 || fd > thread_current()->fdMax)
+  { return ; }
+
   process_remove_fdTable(fd);
 }
 
