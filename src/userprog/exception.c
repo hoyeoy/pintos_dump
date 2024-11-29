@@ -157,22 +157,17 @@ page_fault (struct intr_frame *f)
    struct sp_entry *spe = find_spe(fault_addr);
 
    if(spe!=NULL){
+      if((write==1)&&(spe->writable==false)){
+         syscall_exit(-1);
+      }
       page_fault_handler(spe);
       if(spe->is_loaded == false){ // not loaded
-         printf ("Page fault at %p: %s error %s page in %s context.\n",
-            fault_addr,
-            not_present ? "not present" : "rights violation",
-            write ? "writing" : "reading",
-            user ? "user" : "kernel");
-         kill(f);
+         syscall_exit(-1);
       }
+
+      
    }else{ // spe is null
-      printf ("Page fault at %p: %s error %s page in %s context.\n",
-         fault_addr,
-         not_present ? "not present" : "rights violation",
-         write ? "writing" : "reading",
-         user ? "user" : "kernel");
-      kill(f);
+      syscall_exit(-1);
    }
 }
 
