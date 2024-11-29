@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "filesys/off_t.h"
 #include "vm/page.h"
+#include "lib/user/syscall.h"
 
 void syscall_init (void);
 
@@ -23,5 +24,7 @@ void syscall_close (int fd);
 /*project 3*/
 void is_valid_buffer(void* buffer, unsigned size, void *esp, bool writable);
 void is_valid_str(const char *str);
+void syscall_munmap(int mapping);
+int syscall_mmap(int fd, void* addr);
 
 #endif /* userprog/syscall.h */

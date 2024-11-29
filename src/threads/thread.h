@@ -119,6 +119,8 @@ struct thread
    struct semaphore wait_exit;
    struct semaphore wait_load;
    int exit_status;
+   struct list mmap_file_list;
+   int mapid;
     
    struct file **fdTable;
    int fdMax;

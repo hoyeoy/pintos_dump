@@ -1,7 +1,7 @@
 #include "vm/page.h"
 
-struct list frame_table;
-struct frame_table_entry *current_clock;
+// struct list frame_table;
+// struct frame_table_entry *current_clock;
 
 void 
 sp_table_init(struct hash *sp_table)
@@ -96,21 +96,6 @@ frame_alloc(enum palloc_flags flag)
 bool
 load_file(void* kadd, struct sp_entry *spe)
 {
-    // size_t read_bytes;
-    // file_seek(spe->file, spe->offset);
-    // read_bytes = file_read(spe->file, kadd, spe->read_bytes);
-
-    // // printf("read %d bytes\n", read_bytes);
-
-    // if(read_bytes == spe->read_bytes) {
-    //     memset(kadd + read_bytes, 0, spe->zero_bytes); // zero-ing out empty area
-    //     return true;
-    // }
-    // else {
-    //     return false; // target->read_bytes is always smaller than page size
-    // }
-
-    //////////////////////////////////////
     if(!file_read_at(spe->file, kadd, spe->read_bytes, spe->offset)) return false;
     unsigned check = file_read_at(spe->file, kadd, spe->read_bytes, spe->offset);
     if(check < spe->read_bytes) return false;

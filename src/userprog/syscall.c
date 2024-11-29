@@ -13,7 +13,6 @@
 #include "filesys/filesys.h"
 
 
-
 static void syscall_handler (struct intr_frame *);
 /*Project 2*/
 struct lock f_lock;
@@ -93,6 +92,14 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case SYS_CLOSE:
       syscall_close((const char *)*(uint32_t *)(f->esp + 4));
+      break;
+    case SYS_MMAP:
+      if_user_add(f->esp+8); 
+      f->eax = syscall_mmap((int)*(uint32_t *)(f->esp + 4), (void *)*(uint32_t *)(f->esp + 8));
+      break;
+    case SYS_MUNMAP:
+      if_user_add(f->esp+4); 
+      syscall_munmap((int)*(uint32_t *)(f->esp + 4));
       break;
   }
   /* projext 2 1107*/
@@ -288,5 +295,99 @@ is_valid_str(const char *str)
 {
   for(int i=0;i<strlen(str);i++){
     if_user_add(str+i);
+  }
+}
+
+/*project 3*/
+int
+syscall_mmap(int fd, void* addr)
+{
+  if(fd < 2) return -1;
+  if(((int)addr%PGSIZE)!=0) return -1;
+
+  struct file* file;
+  file = process_search_fdTable(fd);
+  if(file_length(file)==0) return -1;
+  struct file* reopen = file_reopen(file);
+
+  struct thread* t=thread_current();
+  
+  struct mmap_file* mfile = malloc(sizeof(struct mmap_file));
+  list_init(&(mfile->spe_list));
+  // Alloc mapid
+  mfile->mapid = t->mapid;
+  t->mapid++;
+  // set file
+  mfile->file = reopen;
+  
+  list_push_back(&(t->mmap_file_list), &(mfile->elem));
+
+  int f_size = syscall_filesize(fd);
+  void* _addr = addr;
+  while(f_size>0){
+    struct sp_entry* spe = malloc(sizeof(struct sp_entry));
+    spe->type = VM_FILE;
+    spe->vaddr = _addr;
+    spe->writable = true;
+    spe->is_loaded = false;
+    spe->file = reopen;
+    spe->offset = (size_t)_addr-(size_t)addr;
+    spe->read_bytes = PGSIZE;
+    spe->zero_bytes = 0;
+
+    if(f_size<PGSIZE) {
+      spe->read_bytes=f_size;
+      spe->zero_bytes = PGSIZE - f_size;
+    }
+
+    if(!insert_spe(&(t->sp_table), &(spe->elem))) return -1;
+    
+    list_push_back(&(mfile->spe_list), &(spe->mmap_elem));
+
+    _addr += PGSIZE;
+    f_size -= spe->read_bytes;
+  }
+
+  return mfile->mapid;
+}
+
+void 
+syscall_munmap(int mapping)
+{
+  struct thread* t = thread_current();
+  struct list_elem *curr1;
+  struct list_elem *curr2;
+  struct list_elem *curr3;
+  // delete every spe
+  for(curr1=list_begin(&(t->mmap_file_list));curr1!=list_end(&(t->mmap_file_list));curr1=list_next(curr1))
+  {
+    struct mmap_file * temp = list_entry(curr1, struct mmap_file, elem);
+    if(temp->mapid == mapping || mapping == -1){
+      //delete spe
+      for(curr2=list_begin(&(temp->spe_list));curr2!=list_end(&(temp->spe_list));curr2=list_next(curr2))
+      {
+        struct sp_entry* spe = list_entry(curr2, struct sp_entry, mmap_elem);
+        //write-back
+        if(pagedir_is_dirty(t->pagedir, spe->vaddr)==1){
+          file_write_at(spe->file, spe->vaddr, spe->read_bytes, spe->offset);
+        }
+        
+        //evict from frame table
+        for(curr3=list_begin(&(frame_table));curr3!=list_end(&(frame_table));curr3=list_next(curr3)){
+          if(list_entry(curr3, struct frame_table_entry, f_elem)->kadd == pagedir_get_page(t->pagedir, spe->vaddr)){
+            pagedir_clear_page(t->pagedir, spe->vaddr);
+            palloc_free_page(pagedir_get_page(t->pagedir, spe->vaddr));
+            curr3 = list_remove(curr3);
+            free(list_entry(curr3, struct frame_table_entry, f_elem));
+          }
+        }
+        //delete spe and deallocate
+        curr2 = list_remove(curr2);
+        delete_spe(&(t->sp_table), spe);
+        free(spe);
+      }
+    }
+    file_close(temp->file);
+    free(temp);
   }
 }

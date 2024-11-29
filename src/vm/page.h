@@ -12,6 +12,8 @@
 #define VM_FILE 1
 #define VM_ANON 2
 
+struct list frame_table;
+struct frame_table_entry *current_clock;
 
 struct frame_table_entry{
 	void *kadd;
@@ -38,6 +40,14 @@ struct sp_entry {
 	
 	struct hash_elem elem; // hash table element 
 };
+
+struct mmap_file{
+	int mapid;
+	struct file* file;
+	struct list_elem elem;
+	struct list spe_list;
+};
+
 
 void sp_table_init(struct hash *sp_table);
 static unsigned sp_hash_func(const struct hash_elem *e,void *aux);

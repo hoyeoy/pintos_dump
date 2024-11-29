@@ -298,6 +298,7 @@ process_exit (void)
   palloc_free_page(cur->fdTable);
 
   /*project 3*/
+  syscall_munmap(-1);
   hash_destroy(&(cur->sp_table), spt_destructor);
 
   /* Destroy the current process's page directory and switch back
@@ -748,7 +749,13 @@ page_fault_handler(struct sp_entry *spe)
     if(success) {
       spe->is_loaded = true;
     }
-  }
+  } else if(spe->type == VM_FILE){
+    load_file(frame->kadd, spe);
 
+    success = install_page(spe->vaddr, frame->kadd, spe->writable);
+    if(success) {
+      spe->is_loaded = true;
+    }
+  }
   return success;
 }
