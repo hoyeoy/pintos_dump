@@ -95,53 +95,23 @@ frame_alloc(enum palloc_flags flag)
     return frame;
 }
 
-// bool
-// load_file(void* kadd, struct sp_entry *spe)
-// {
-//     bool flag = !lock_held_by_current_thread(&f_lock);
-//     if(flag) lock_acquire(&f_lock);
+bool load_file(void * kaddr, struct sp_entry *spe) {
+    bool flag = !lock_held_by_current_thread(&f_lock);
+    size_t check;
 
-//     if(!file_read_at(spe->file, kadd, spe->read_bytes, spe->offset)) {
-//         if(flag) lock_release(&f_lock);
-//         return false;
-//     }
-//     unsigned check = file_read_at(spe->file, kadd, spe->read_bytes, spe->offset);
-//     if(check < spe->read_bytes) {
-//         if(flag) lock_release(&f_lock);
-//         return false;
-//     }
-//     if(flag) lock_release(&f_lock);
+    if(flag) lock_acquire(&f_lock);
+    //file_seek(spe->file, spe->offset);
+    //check = file_read(spe->file, kaddr, spe->read_bytes);
+    check =  file_read_at(spe->file, kaddr, spe->read_bytes, spe->offset);;
+    if(flag) lock_release(&f_lock);
 
-//     memset(kadd+spe->read_bytes, 0, spe->zero_bytes);
-//     return true;
-// }
-
-/*sample code*/
-bool load_file(void * kaddr, struct sp_entry *target) {
-    // printf("%x, %x, %d, %d\n", target->file, kaddr, target->read_bytes, target->offset);
-    size_t read_bytes;
-    if(lock_held_by_current_thread(&f_lock)) {
-        file_seek(target->file, target->offset);
-        read_bytes = file_read(target->file, kaddr, target->read_bytes);
-    }
-    else {
-        lock_acquire(&f_lock);
-        file_seek(target->file, target->offset);
-        read_bytes = file_read(target->file, kaddr, target->read_bytes);
-        // size_t read_bytes = file_read_at(target->file, kaddr, target->read_bytes, target->offset);
-        lock_release(&f_lock);
-    }
-
-    // printf("read %d bytes\n", read_bytes);
-
-    if(read_bytes == target->read_bytes) {
-        memset(kaddr + read_bytes, 0, target->zero_bytes); // zero-ing out empty area
+    if(check == spe->read_bytes) {
+        memset(kaddr + check, 0, spe->zero_bytes);
         return true;
     }
-    else {
-        return false; // target->read_bytes is always smaller than page size
-    }
+    return false;
 }
+ 
 
 void
 f_table_init(void) //1124
