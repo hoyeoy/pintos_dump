@@ -190,8 +190,13 @@ int syscall_open(const char *file)
   {
     return -1;
   }
+
+  lock_acquire(&f_lock);
   struct file* tmp = filesys_open(file); 
+  
+
   if(tmp==NULL){ 
+    lock_release(&f_lock);
     return -1;
   }
   //project 2 
@@ -199,8 +204,11 @@ int syscall_open(const char *file)
   {
     file_deny_write(tmp);
   }
-   
-  return process_add_fdTable(tmp);
+  int result = process_add_fdTable(tmp);
+
+  lock_release(&f_lock);
+
+  return result;
 }
 
 int syscall_filesize (int fd)
@@ -373,10 +381,11 @@ syscall_munmap(int mapping)
         }
         
         //evict from frame table
+        void* kaddr = pagedir_get_page(t->pagedir, spe->vaddr);
         for(curr3=list_begin(&(frame_table));curr3!=list_end(&(frame_table));curr3=list_next(curr3)){
-          if(list_entry(curr3, struct frame_table_entry, f_elem)->kadd == pagedir_get_page(t->pagedir, spe->vaddr)){
+          if(list_entry(curr3, struct frame_table_entry, f_elem)->kadd == kaddr){
             pagedir_clear_page(t->pagedir, spe->vaddr);
-            palloc_free_page(pagedir_get_page(t->pagedir, spe->vaddr));
+            palloc_free_page(kaddr);
             curr3 = list_remove(curr3);
             free(list_entry(curr3, struct frame_table_entry, f_elem));
           }

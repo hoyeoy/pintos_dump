@@ -7,6 +7,7 @@
 #include "threads/malloc.h"
 #include "threads/palloc.h"
 #include "threads/thread.h"
+#include "threads/synch.h"
 
 #define VM_BIN 0
 #define VM_FILE 1
