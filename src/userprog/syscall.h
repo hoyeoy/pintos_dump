@@ -4,6 +4,7 @@
 #include "filesys/off_t.h"
 #include "vm/page.h"
 #include "lib/user/syscall.h"
+#include "userprog/pagedir.h"
 
 void syscall_init (void);
 

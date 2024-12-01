@@ -557,12 +557,12 @@ init_thread (struct thread *t, const char *name, int priority)
   t->nice = 0;
   t->recent_CPU = 0;
   /*Project 3*/
-    /*Project 2*/
-    list_init(&(t->child_list));
-    sema_init(&(t->wait_exit),0); // 
-    sema_init(&(t->wait_load),0); //  
-    list_init(&(t->mmap_file_list));
-    t->mapid = 0;
+  /*Project 2*/
+  list_init(&(t->child_list));
+  sema_init(&(t->wait_exit),0); // 
+  sema_init(&(t->wait_load),0); //  
+  list_init(&(t->mmap_file_list));
+  t->mapid = 0;
 
 
   old_level = intr_disable ();

@@ -18,8 +18,10 @@ test_main (void)
   CHECK ((map = mmap (handle, actual)) != MAP_FAILED, "mmap \"sample.txt\"");
 
   /* Check that data is correct. */
-  if (memcmp (actual, sample, strlen (sample)))
+  if (memcmp (actual, sample, strlen (sample))){
     fail ("read of mmap'd file reported bad data");
+  }
+
 
   /* Verify that data is followed by zeros. */
   for (i = strlen (sample); i < 4096; i++)
