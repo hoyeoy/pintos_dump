@@ -316,12 +316,13 @@ syscall_mmap(int fd, void* addr)
   if(addr == NULL || ((int)addr%PGSIZE)!=0) return -1;
   int f_size = syscall_filesize(fd);
 
-  // void * ptr;
-  // for(ptr = addr; ptr < addr + f_size; ptr += PGSIZE) {
-	//   if(find_spe(ptr)) { // if current address is already occupied
-  //     return -1;
-  //   }
-  // } 
+  void* curr = addr;
+  while(curr < addr + f_size) // avoid overlapping
+  {
+    if(find_spe(curr)) return -1;
+
+    curr += PGSIZE;
+  }
 
   struct file* file = process_search_fdTable(fd);
   if(file == NULL) return -1;
@@ -378,6 +379,7 @@ syscall_munmap(int mapping)
   
   struct list_elem *mmap_elem;
   struct list_elem *spe_elem;
+  struct list_elem *fte_elem;
 
   for(mmap_elem=list_begin(&(t->mmap_file_list));mmap_elem!=list_end(&(t->mmap_file_list));mmap_elem=list_next(mmap_elem))
   {
@@ -387,18 +389,30 @@ syscall_munmap(int mapping)
       {
         struct sp_entry* spe_delete = list_entry(spe_elem, struct sp_entry, mmap_elem);
 
+        void* kaddr = pagedir_get_page(t->pagedir, spe_delete->vaddr); // find kernel address
         if(pagedir_is_dirty(thread_current()->pagedir,spe_delete->vaddr)){
           lock_acquire(&f_lock);
-          void* kaddr = pagedir_get_page(t->pagedir, spe_delete->vaddr); // find kernel address
+          // void* kaddr = pagedir_get_page(t->pagedir, spe_delete->vaddr); // find kernel address
           file_write_at(mmap_delete->file, kaddr, spe_delete->read_bytes, spe_delete->offset);
           lock_release(&f_lock);
         }
-        
+
+        // delete from fram_table
+        for(fte_elem=list_begin(&frame_table);fte_elem!=list_end(&frame_table);fte_elem=list_next(fte_elem))
+        {
+          struct frame_table_entry* fte_delete = list_entry(fte_elem, struct frame_table_entry, f_elem);
+          if(fte_delete->spe == spe_delete){
+            list_remove(&fte_delete->f_elem);
+          }
+        }
+
+        // free page
+        pagedir_clear_page(t->pagedir, spe_delete->vaddr);
+        palloc_free_page(kaddr);
         // delete from sp_table
-        delete_spe(&thread_current()->sp_table, spe_delete);
+        delete_spe(&(thread_current()->sp_table), spe_delete);
         // delete from frame table
         list_remove(spe_elem);
-
         // free(spe_delete);
       }
       list_remove(mmap_elem);

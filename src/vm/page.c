@@ -43,7 +43,7 @@ insert_spe (struct hash *sp_table, struct sp_entry *spe)
 bool 
 delete_spe (struct hash *sp_table, struct sp_entry *spe)
 {
-    if(hash_delete(sp_table, spe)==NULL) return false;
+    if(hash_delete(sp_table, &spe->elem)==NULL) return false;
 
     return true;
 }
