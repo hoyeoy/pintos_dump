@@ -408,7 +408,8 @@ syscall_munmap(int mapping)
 
         // free page
         pagedir_clear_page(t->pagedir, spe_delete->vaddr);
-        palloc_free_page(kaddr);
+        // palloc_free_page(kaddr); //1204
+        free_page(kaddr); 
         // delete from sp_table
         delete_spe(&(thread_current()->sp_table), spe_delete);
         // delete from frame table

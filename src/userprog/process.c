@@ -678,7 +678,8 @@ setup_stack (void **esp)
     *esp = PHYS_BASE;
   }
   else{
-    palloc_free_page(kpage->kadd);
+    // palloc_free_page(kpage->kadd); // 1204
+    free_page(kpage->kadd);
   }
   }
   struct sp_entry* check = (struct sp_entry *)malloc(sizeof(struct sp_entry));
@@ -744,17 +745,34 @@ page_fault_handler(struct sp_entry *spe)
 
   if(spe->type == VM_BIN){
     load_file(frame->kadd, spe);
-
     success = install_page(spe->vaddr, frame->kadd, spe->writable);
     if(success) {
       spe->is_loaded = true;
     }
-  } else if(spe->type == VM_FILE){
+    else { // 1204
+      free_page(frame->kadd); 
+    }
+  } 
+  else if(spe->type == VM_FILE){
     load_file(frame->kadd, spe);
-
     success = install_page(spe->vaddr, frame->kadd, spe->writable);
     if(success) {
       spe->is_loaded = true;
+    }
+    else { // 1204
+      free_page(frame->kadd); 
+    }
+  } 
+  else if(spe->type == VM_ANON){
+    swap_in(spe->swap_slot, frame->kadd); 
+
+    load_file(frame->kadd, spe);
+    success = install_page(spe->vaddr, frame->kadd, spe->writable);
+    if(success) {
+      spe->is_loaded = true;
+    }
+    else { // 1204
+      free_page(frame->kadd); 
     }
   }
   return success;

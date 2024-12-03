@@ -8,6 +8,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/synch.h"
+#include "vm/swap.h"
 
 #define VM_BIN 0
 #define VM_FILE 1
@@ -37,7 +38,7 @@ struct sp_entry {
 	size_t read_bytes;
 	size_t zero_bytes;
 
-	// size_t swap_slot; 
+	size_t swap_slot; 
 	
 	struct hash_elem elem; // hash table element 
 };
@@ -61,6 +62,10 @@ void spt_destructor(struct hash_elem *elem, void *aux);
 struct frame_table_entry *frame_alloc(enum palloc_flags flag);
 bool load_file(void* kadd, struct sp_entry *spe);
 void f_table_init(void); //1124
+void free_page (void *kaddr); 
+static struct list_elem* get_next_frame(); 
+void* try_to_free_pages(enum palloc_flags flags);
+
 
 
 #endif /* vm/page.h */

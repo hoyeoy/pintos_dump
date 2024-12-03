@@ -83,6 +83,12 @@ frame_alloc(enum palloc_flags flag)
     void* kadd;
 
     kadd = palloc_get_page(flag);
+    /* project 3 1203 */
+    if (kadd == NULL)
+    {
+       kadd = try_to_free_page(flag); 
+    }
+
     frame = malloc(sizeof(struct frame_table_entry));
 
     frame->kadd = kadd;
@@ -112,10 +118,90 @@ bool load_file(void * kaddr, struct sp_entry *spe) {
     return false;
 }
  
-
 void
 f_table_init(void) //1124
 {
     list_init(&frame_table);
     current_clock = NULL;
+}
+
+// void 
+// add_page_to_ft(struct frame_table_entry* page)
+// {
+//     list_push_back(&frame_table, &page->f_elem); 
+// }
+
+// void 
+// del_page_from_ft(struct frame_table_entry* page)
+// {
+//     list_remove(&page->f_elem);
+// }
+
+void
+free_page (void *kaddr)
+{
+    struct list_elem *fte_elem; 
+    for(fte_elem=list_begin(&frame_table);fte_elem!=list_end(&frame_table);fte_elem=list_next(fte_elem))
+        {
+          struct frame_table_entry* fte_delete = list_entry(fte_elem, struct frame_table_entry, f_elem);
+          if(fte_delete->kadd == kaddr){
+            list_remove(&fte_delete->f_elem);
+            palloc_free_page(kaddr);
+            break;
+          }
+        }
+}
+
+static struct list_elem*
+get_next_frame()
+{
+    // struct frame_table_entry *current_clock;
+    if (&current_clock->f_elem == list_end(&frame_table))
+    {
+        // return NULL; 
+        return list_begin(&frame_table); 
+    }
+
+    struct list_elem *next = list_next(&current_clock->f_elem); 
+    current_clock = list_entry(next, struct frame_table_entry, f_elem);
+    return next; 
+}
+
+void*
+try_to_free_pages(enum palloc_flags flags)
+{
+    struct list_elem *clock = get_next_frame(); 
+    struct frame_table_entry *cur = list_entry(clock, struct frame_table_entry, f_elem);
+    struct sp_entry *spe = cur -> spe; 
+    if (spe->type == VM_BIN)
+    {
+        if (pagedir_is_dirty (cur->t->pagedir, spe->vaddr)) // modified -> write back 
+        {
+            spe->swap_slot = swap_out(cur->kadd);
+            spe->type = VM_ANON; 
+
+            current_clock = list_remove(clock); 
+            palloc_free_page(cur->kadd);
+        } 
+    }
+
+    else if (spe->type == VM_FILE)
+    {
+        if (pagedir_is_dirty (cur->t->pagedir, spe->vaddr)) // modified -> write back 
+        {
+            // spe->swap_slot = swap_out(cur->kadd);
+            file_write_at(spe->file, cur->kadd, spe->read_bytes, spe->offset); 
+        } 
+        current_clock = list_remove(clock); 
+        palloc_free_page(cur->kadd);
+        
+    }
+    else if (spe->type == VM_ANON)
+    {
+        spe->swap_slot = swap_out(cur->kadd);
+    }
+
+    spe->is_loaded = false; 
+    return palloc_get_page(flags); 
+
 }
