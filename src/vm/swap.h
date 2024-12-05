@@ -1,4 +1,4 @@
-#ifdef VM_SWAP_H
+#ifndef VM_SWAP_H
 #define VM_SWAP_H
 
 
@@ -11,6 +11,7 @@
 #include "lib/stddef.h"
 #include <stdbool.h>
 #include "userprog/process.h"
+#include <bitmap.h>
 
 struct lock swap_lock; 
 struct block *swap_block; 
@@ -20,4 +21,4 @@ void init_swap(size_t used_index, void* kaddr);
 void swap_in(size_t used_index, void* kaddr);
 size_t swap_out(void* kaddr); 
 
-#endif 
+#endif  

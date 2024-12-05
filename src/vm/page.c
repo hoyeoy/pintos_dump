@@ -86,7 +86,7 @@ frame_alloc(enum palloc_flags flag)
     /* project 3 1203 */
     if (kadd == NULL)
     {
-       kadd = try_to_free_page(flag); 
+       kadd = try_to_free_pages(flag); 
     }
 
     frame = malloc(sizeof(struct frame_table_entry));
