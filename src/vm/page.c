@@ -86,9 +86,7 @@ frame_alloc(enum palloc_flags flag)
     /* project 3 1203 */
     if (kadd == NULL)
     {
-       printf("before try to free pge\n");
        kadd = try_to_free_pages(flag); 
-       printf("after try to free pages\n");
     }
 
     frame = malloc(sizeof(struct frame_table_entry));
@@ -158,49 +156,38 @@ static struct list_elem*
 get_next_frame()
 {   
     struct list_elem *element; 
-    printf("hi 1\n");//
     if(current_clock == NULL) 
     { 
-        printf("hi 2\n");//
         element = list_begin(&frame_table); 
         if(list_empty(&frame_table))
         {
-            printf("List empty\n");
             return NULL; 
         }
         if (element==NULL)
         {
-            printf("null element\n");
             return NULL; 
         }
         
         if(element != list_end(&frame_table)) 
         { 
-            printf("hi 4\n");//
             current_clock = list_entry(element, struct frame_table_entry, f_elem); 
-            printf("hi 7\n"); //
             return element; 
         } 
         else 
         {   
-            printf("hi 6\n"); 
             return NULL; 
         }
     } 
-    printf("hi 8\n");
     element = list_next(&current_clock->f_elem); 
     if(element == list_end(&frame_table)) 
     { 
-        printf("hi 3\n");//
         if(&current_clock->f_elem == list_begin(&frame_table)) 
-        {    printf("hi 5\n");//
+        {   
             return NULL; }
         else 
             element = list_begin(&frame_table); 
     } 
-    printf("hi 9\n");
     current_clock = list_entry(element, struct frame_table_entry, f_elem); 
-    printf("hi 10\n");
     return element; 
 
     // struct list_elem *next; 
@@ -260,9 +247,7 @@ try_to_free_pages(enum palloc_flags flags) /*evict 될 frame을 선택*/
    else 
    { 
     lru_page->spe->type = VM_ANON; 
-    printf("before anon swap out\n");
     lru_page->spe->swap_slot = swap_out(lru_page->kadd); 
-    printf("after anon swap out\n");
    } 
   } 
   lru_page->spe->is_loaded = false; 
@@ -283,6 +268,5 @@ try_to_free_pages(enum palloc_flags flags) /*evict 될 frame을 선택*/
   free(lru_page); 
   break; 
  } 
- printf("escape\n");
  return palloc_get_page(flags); 
 }

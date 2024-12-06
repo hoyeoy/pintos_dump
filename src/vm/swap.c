@@ -15,7 +15,6 @@ init_swap()
 void 
 swap_in(size_t used_index, void* kaddr)
 {
-    lock_acquire(&swap_lock); 
     int unit_sector = PGSIZE / BLOCK_SECTOR_SIZE; 
     // 
     for (int i = 0 ; i < unit_sector ; i++)
@@ -23,7 +22,6 @@ swap_in(size_t used_index, void* kaddr)
         block_read (swap_block, used_index * unit_sector + i, kaddr + i * BLOCK_SECTOR_SIZE);
     }
     bitmap_set(swap_bitmap, used_index, 0); 
-    lock_release(&swap_lock); 
 }
 
 size_t 
