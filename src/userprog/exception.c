@@ -165,7 +165,13 @@ page_fault (struct intr_frame *f)
          syscall_exit(-1);
       }
    }else{ // spe is null
-      syscall_exit(-1);
+      if(fault_addr >= f->esp - 32){
+         if(!expand_stack(fault_addr)){
+            syscall_exit(-1);
+         }
+      }else{
+         syscall_exit(-1);
+      }
    }
 }
 }

@@ -777,3 +777,35 @@ page_fault_handler(struct sp_entry *spe)
   }
   return success;
 }
+
+bool expand_stack(void * vaddr) {
+  if(vaddr < PHYS_BASE - 2048 * PGSIZE) { // stack can grow up to 8MB(2^23 / 2^12 = 2^11 pages)
+    return false;
+  }
+
+  struct frame_table_entry * frame;
+  struct sp_entry * spe;
+
+  for(; !find_spe(vaddr); vaddr += PGSIZE) { // grow stack until vaddr in included in stack
+    frame = frame_alloc(PAL_USER | PAL_ZERO);
+    if(!frame) {
+      return false;
+    }
+
+    if(!install_page(pg_round_down(vaddr), frame->kadd, true)) {
+      free_page(frame->kadd);
+      return false;
+    }
+
+    spe = malloc(sizeof(struct sp_entry));
+
+    frame->spe = spe;
+    spe->type = VM_ANON;
+    spe->vaddr = pg_round_down(vaddr);
+    spe->writable = true;
+    spe->is_loaded = true;
+
+    hash_insert(&(frame->t->sp_table), &(spe->elem));
+  }
+  return true;
+}
