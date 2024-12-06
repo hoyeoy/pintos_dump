@@ -1,10 +1,12 @@
 #include "vm/swap.h"
 
-void 
-init_swap(size_t used_index, void* kaddr)
+void
+init_swap() 
+//init_swap(size_t used_index, void* kaddr)
 {
     swap_block = block_get_role(BLOCK_SWAP); 
     /* PROJECT 3: block_size 함수가 num of sector를 반환하기 때문에 PGSIZE가 아닌 PGSIZE/SECTOR SIZE로 나눠줘야 함*/
+
 	swap_bitmap = bitmap_create(block_size(swap_block) / (PGSIZE / BLOCK_SECTOR_SIZE));
 	// bitmap_set_all (swap_table, 0);
     bitmap_set_all (swap_bitmap, 0);
@@ -20,7 +22,6 @@ swap_in(size_t used_index, void* kaddr)
     {
         block_read (swap_block, used_index * unit_sector + i, kaddr + i * BLOCK_SECTOR_SIZE);
     }
-    
     bitmap_set(swap_bitmap, used_index, 0); 
     lock_release(&swap_lock); 
 }

@@ -115,6 +115,8 @@ main (void)
   syscall_init ();
 #endif
 
+
+
   /* Start thread scheduler and enable interrupts. */
   thread_start ();
   serial_init_queue ();
@@ -126,6 +128,10 @@ main (void)
   locate_block_devices ();
   filesys_init (format_filesys);
 #endif
+
+#ifdef VM_SWAP_H
+  init_swap();
+#endif 
 
   printf ("Boot complete.\n");
   

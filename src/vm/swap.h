@@ -17,7 +17,8 @@ struct lock swap_lock;
 struct block *swap_block; 
 struct bitmap *swap_bitmap; 
 
-void init_swap(size_t used_index, void* kaddr);
+//void init_swap(size_t used_index, void* kaddr);
+void init_swap();
 void swap_in(size_t used_index, void* kaddr);
 size_t swap_out(void* kaddr); 
 

@@ -766,7 +766,7 @@ page_fault_handler(struct sp_entry *spe)
   else if(spe->type == VM_ANON){
     swap_in(spe->swap_slot, frame->kadd); 
 
-    load_file(frame->kadd, spe);
+    // load_file(frame->kadd, spe);
     success = install_page(spe->vaddr, frame->kadd, spe->writable);
     if(success) {
       spe->is_loaded = true;
