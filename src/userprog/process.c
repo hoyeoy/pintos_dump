@@ -688,38 +688,14 @@ setup_stack (void **esp)
     free_page(kpage->kadd);
   }
   }
-  struct sp_entry* check = (struct sp_entry *)malloc(sizeof(struct sp_entry));
-  check->vaddr = pg_round_down(((uint8_t *) PHYS_BASE) - PGSIZE);
-  check->is_loaded = true;
-  check->writable = true;
-  check->type = VM_ANON;
-  kpage->spe = check;
-  bool success_insert = insert_spe(&(thread_current()->sp_table), check);
-  return success_insert;
+  struct sp_entry* spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
+  spe->vaddr = pg_round_down(((uint8_t *) PHYS_BASE) - PGSIZE);
+  spe->is_loaded = true;
+  spe->writable = true;
+  spe->type = VM_ANON;
+  kpage->spe = spe;
 
-  // uint8_t *kpage;
-  // bool success = false;
-
-  // kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  // if (kpage != NULL) 
-  //   {
-  //     success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-  //     if (success)
-  //     /*project 2*/
-  //       *esp = PHYS_BASE;
-  //     else
-  //       palloc_free_page (kpage);
-  //   }
-
-  //   /*project 3*/
-  //   struct sp_entry *spe = (struct sp_entry *)malloc(sizeof(struct sp_entry));
-  //   spe->vaddr = ((uint8_t *) PHYS_BASE) - PGSIZE;
-  //   spe->type = VM_ANON;
-  //   spe->is_loaded = true;
-  //   insert_spe(&(thread_current()->sp_table), spe);
-
-
-  // return success;
+  return insert_spe(&(thread_current()->sp_table), spe);
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel
@@ -785,33 +761,36 @@ page_fault_handler(struct sp_entry *spe)
 }
 
 bool expand_stack(void * vaddr) {
-  if(vaddr < PHYS_BASE - 2048 * PGSIZE) { // stack can grow up to 8MB(2^23 / 2^12 = 2^11 pages)
-    return false;
-  }
-
   struct frame_table_entry * frame;
   struct sp_entry * spe;
+  struct sp_entry * check;
+  bool success;
 
-  for(; !find_spe(vaddr); vaddr += PGSIZE) { // grow stack until vaddr in included in stack
+  if(find_spe(vaddr)!=NULL) return false; // Check already exist
+
+  while(true){
     frame = frame_alloc(PAL_USER | PAL_ZERO);
-    if(!frame) {
-      return false;
-    }
 
-    if(!install_page(pg_round_down(vaddr), frame->kadd, true)) {
+    success = install_page(pg_round_down(vaddr), frame->kadd, true);
+    if(!success){
       free_page(frame->kadd);
       return false;
     }
 
-    spe = malloc(sizeof(struct sp_entry));
-
-    frame->spe = spe;
+    spe = malloc(sizeof(struct sp_entry)); // Alloc spe
     spe->type = VM_ANON;
     spe->vaddr = pg_round_down(vaddr);
     spe->writable = true;
     spe->is_loaded = true;
 
+    frame->spe = spe; // Register spe to the frame
     hash_insert(&(frame->t->sp_table), &(spe->elem));
+
+    vaddr += PGSIZE;
+    if(find_spe(vaddr) != NULL) {
+      break;
+    }
   }
+
   return true;
 }

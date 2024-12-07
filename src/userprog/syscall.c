@@ -355,8 +355,13 @@ syscall_mmap(int fd, void* addr)
 	  spe->writable = true;
 	  spe->file = reopen;
 	  spe->offset = ofs;
-	  spe->read_bytes = f_size < PGSIZE ? f_size: PGSIZE;
-	  spe->zero_bytes = PGSIZE - spe->read_bytes;
+	  spe->read_bytes = PGSIZE;
+	  spe->zero_bytes = 0;
+
+    if(f_size < PGSIZE){
+      spe->read_bytes = f_size;
+      spe->zero_bytes = PGSIZE - f_size;
+    }
 
 	  list_push_back (&(mfile->spe_list), &(spe->mmap_elem));
 	  hash_insert(&(thread_current()->sp_table), &(spe->elem)); 
@@ -408,7 +413,6 @@ syscall_munmap(int mapping)
 
         // free page
         pagedir_clear_page(t->pagedir, spe_delete->vaddr);
-        // palloc_free_page(kaddr); //1204
         free_page(kaddr); 
         // delete from sp_table
         delete_spe(&(thread_current()->sp_table), spe_delete);

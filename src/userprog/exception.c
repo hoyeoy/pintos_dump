@@ -173,15 +173,14 @@ page_fault (struct intr_frame *f)
       }*/
    }else{ // spe is null
       if(fault_addr >= f->esp - 32){
-         if(!expand_stack(fault_addr)){
-            //printf("pagefault expand stack\n");
-            syscall_exit(-1);
-         }
+         if(fault_addr < PHYS_BASE - 2048 * PGSIZE) syscall_exit(-1);
+         bool check = expand_stack(fault_addr);
+         if(!check) syscall_exit(-1);
       }else{
          //printf("pagefault exit\n");
          syscall_exit(-1);
       }
    }
-}
+   }
 }
 

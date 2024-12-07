@@ -125,18 +125,6 @@ f_table_init(void) //1124
     current_clock = NULL;
 }
 
-// void 
-// add_page_to_ft(struct frame_table_entry* page)
-// {
-//     list_push_back(&frame_table, &page->f_elem); 
-// }
-
-// void 
-// del_page_from_ft(struct frame_table_entry* page)
-// {
-//     list_remove(&page->f_elem);
-// }
-
 void
 free_page (void *kaddr)
 {
@@ -182,63 +170,6 @@ get_next_frame()
     }
     current_clock = list_entry(next, struct frame_table_entry, f_elem); 
     return &current_clock->f_elem; 
-    
-
-    /*
-    struct list_elem *next; 
-    // 1. never been assigned 
-    if(current_clock == NULL) 
-    { 
-        next = list_begin(&frame_table); // returns list head -> next
-        if(list_empty(&frame_table)) // if frame table empty 
-        {return NULL; }
-        if (next==NULL) // if there is no frame beginning 
-        {return NULL; }
-        
-        // next can't be list tail 
-        if(next != list_end(&frame_table)) 
-        { 
-            current_clock = list_entry(next, struct frame_table_entry, f_elem); 
-            return next; 
-        } 
-        else // if next is list tail  
-        {  
-            return NULL; 
-        }
-    } 
-    // 2. have been assigned before
-    next = list_next(&current_clock->f_elem); 
-    if(next == list_end(&frame_table)) 
-    {   // list에 원소 1개인 경우 
-        if(&current_clock->f_elem == list_begin(&frame_table)) 
-        {   
-            return NULL; }
-        else // 리스트의 마지막 요소이므로 맨 처음 frame으로 돌아감 
-        {    next = list_begin(&frame_table); }
-        
-    } 
-    current_clock = list_entry(next, struct frame_table_entry, f_elem); 
-    return current_clock->f_elem; */
-
-    // struct list_elem *next; 
-    // if (&current_clock->f_elem == NULL || !list_empty(&frame_table))
-    // {
-    //     next = list_begin(&frame_table);
-    //     if (next == list_end(&frame_table)) { retuen NULL; } // 1205
-    //     current_clock = list_entry(next, struct frame_table_entry, f_elem);
-    //     return next;
-    // }
-    // // struct frame_table_entry *current_clock;
-    // if (next == list_end(&frame_table))
-    // {
-    //     next = list_begin(&frame_table); 
-    //     current_clock = list_entry(next, struct frame_table_entry, f_elem);
-    //     return next; 
-    // }
-
-    // next = list_next(&current_clock->f_elem); 
-    // current_clock = list_entry(next, struct frame_table_entry, f_elem);
-    // return next; 
 }
 
 void*
@@ -307,64 +238,3 @@ try_to_free_pages(enum palloc_flags flags) // evict 될 frame을 선택
     }
 return palloc_get_page(flags); 
 }
-
-/*
-void*
-try_to_free_pages(enum palloc_flags flags) 
-{ 
- struct thread *page_thread; 
- struct list_elem *element; 
- struct frame_table_entry *lru_page; 
- if(list_empty(&frame_table) == true) 
- {  
-    return palloc_get_page(flags); 
- } 
-
- while(true) 
- { 
-  element = get_next_frame(); 
-  if(element == NULL){ 
-   return palloc_get_page(flags); 
-  } 
-  lru_page = list_entry(element, struct frame_table_entry, f_elem); 
-
-  page_thread = lru_page->t; 
- 
-  if(pagedir_is_accessed(page_thread->pagedir, lru_page->spe->vaddr)) 
-  { 
-   pagedir_set_accessed(page_thread->pagedir, lru_page->spe->vaddr, false); 
-   continue; 
-  } 
- 
-  if(pagedir_is_dirty(page_thread->pagedir, lru_page->spe->vaddr) || lru_page->spe->type == VM_ANON) 
-  { 
-   if(lru_page->spe->type == VM_FILE) 
-   { 
-    file_write_at(lru_page->spe->file, lru_page->kadd ,lru_page->spe->read_bytes, lru_page->spe->offset); 
-   } 
-   else 
-   { 
-    lru_page->spe->type = VM_ANON; 
-    lru_page->spe->swap_slot = swap_out(lru_page->kadd); 
-   } 
-  } 
-  lru_page->spe->is_loaded = false; 
-  pagedir_clear_page(page_thread->pagedir, lru_page->spe->vaddr); 
-  palloc_free_page(lru_page->kadd); 
-  //del_page_from_lru_list(lru_page); 
-  if(lru_page!=NULL)
-  {
-    if (current_clock==lru_page)
-    {
-        current_clock = list_entry(list_remove(&lru_page->f_elem), struct frame_table_entry, f_elem);
-    }
-    else 
-    {
-        list_remove(&lru_page->f_elem);
-    }
-  }
-  free(lru_page); 
-  break; 
- } 
- return palloc_get_page(flags); 
-}*/

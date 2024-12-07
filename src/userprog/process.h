@@ -26,5 +26,6 @@ void process_remove_fdTable (int fd);
 bool page_fault_handler(struct sp_entry *spe);
 
 // extern struct lock filesys_lock; //project 3 lock
+bool expand_stack(void * vaddr);
 extern struct lock filesys_lock; // project 3 
 #endif /* userprog/process.h */
