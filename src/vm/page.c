@@ -242,8 +242,76 @@ get_next_frame()
 }
 
 void*
-try_to_free_pages(enum palloc_flags flags) /*evict 될 frame을 선택*/
+try_to_free_pages(enum palloc_flags flags) // evict 될 frame을 선택
 {
+    struct list_elem *elem; 
+    struct frame_table_entry *evict_entry; 
+    struct thread *thread;
+
+    // if frame table is not full (enough space in physical memory)
+    if(list_empty(&frame_table))
+    {    return palloc_get_page(flags); }
+    
+    while(1)
+    { // repeat until evict_entry is found 
+        elem = get_next_frame(); // retrieve next frame from frame table 
+        if(elem==NULL) // if elem==NULL, it means there is space in phyiscal memory 
+        {    return palloc_get_page(flags); }
+
+        evict_entry = list_entry(elem, struct frame_table_entry, f_elem); 
+        thread = evict_entry -> t; 
+
+        // 1. if accessed bit is 1, set it to 0 (do not evict)
+        if(pagedir_is_accessed(thread->pagedir, evict_entry->spe->vaddr)) 
+        { 
+            pagedir_set_accessed(thread->pagedir, evict_entry->spe->vaddr, false); 
+            // continue; 
+        }
+        // 2. if accessed bit is 0, evict 
+        else 
+        {   // VM BIN: if dirty, send to swap partition if modified 
+            // VM FILE: if dirty, write back 
+            // VM ANON: always send to swap partition 
+            if(evict_entry->spe->type == VM_FILE)
+            {
+                if(pagedir_is_dirty(thread->pagedir, evict_entry->spe->vaddr)) // if dirty, 
+                {
+                    file_write_at(evict_entry->spe->file,evict_entry->kadd,evict_entry->spe->read_bytes,evict_entry->spe->offset); // write back 
+                }
+            }
+            else if (evict_entry->spe->type == VM_BIN)
+            {
+                if(pagedir_is_dirty(thread->pagedir, evict_entry->spe->vaddr)) // if dirty, 
+                {
+                    evict_entry->spe->type = VM_ANON; // change type to vm_anon 
+                    evict_entry->spe->swap_slot = swap_out(evict_entry->kadd); // send to swap partition 
+                }
+            }
+            else if(evict_entry->spe->type == VM_ANON)
+            {
+                evict_entry->spe->swap_slot = swap_out(evict_entry->kadd); // send to swap partition 
+            } 
+            
+            evict_entry->spe->is_loaded = false; // evict 
+            pagedir_clear_page(thread->pagedir, evict_entry->spe->vaddr); // clear entry from page table 
+            palloc_free_page(evict_entry->kadd); // deallocate physical memory  
+
+            if (current_clock==evict_entry) // make sure evict entry is current clock 
+            {
+                current_clock = list_entry(list_remove(&evict_entry->f_elem), struct frame_table_entry, f_elem);// move current clock to next 
+            }
+
+            free(evict_entry); // free evict_entry
+            break; 
+        }
+    }
+return palloc_get_page(flags); 
+}
+
+/*
+void*
+try_to_free_pages(enum palloc_flags flags) 
+{ 
  struct thread *page_thread; 
  struct list_elem *element; 
  struct frame_table_entry *lru_page; 
@@ -299,4 +367,4 @@ try_to_free_pages(enum palloc_flags flags) /*evict 될 frame을 선택*/
   break; 
  } 
  return palloc_get_page(flags); 
-}
+}*/

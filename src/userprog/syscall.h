@@ -6,7 +6,7 @@
 #include "lib/user/syscall.h"
 #include "userprog/pagedir.h"
 
-#define CLOSE_ALL 9999
+#define CLOSE_ALL -9999
 
 void syscall_init (void);
 
