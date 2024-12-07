@@ -49,7 +49,7 @@ delete_spe (struct hash *sp_table, struct sp_entry *spe)
 }
 
 struct 
-sp_entry *find_spe (void *vaddr)
+sp_entry *find_spe (void *vaddr) // supplementary table 찾기 
 {
     unsigned pg_num = pg_round_down(vaddr);
     struct sp_entry temp;
@@ -155,40 +155,70 @@ free_page (void *kaddr)
 static struct list_elem*
 get_next_frame()
 {   
-    struct list_elem *element; 
+    struct list_elem *next; 
+    // 1. current clock never been assigned 
     if(current_clock == NULL) 
     { 
-        element = list_begin(&frame_table); 
-        if(list_empty(&frame_table))
-        {
-            return NULL; 
-        }
-        if (element==NULL)
-        {
-            return NULL; 
-        }
+        if(list_empty(&frame_table)) // if frame table empty 
+        {return NULL; }
         
-        if(element != list_end(&frame_table)) 
-        { 
-            current_clock = list_entry(element, struct frame_table_entry, f_elem); 
-            return element; 
-        } 
-        else 
+        next = list_begin(&frame_table); // returns list head -> next
+        if (next == NULL) // if there is no frame beginning 
+        {return NULL; }
+        else if (next == list_end(&frame_table)) // next can't be list tail 
+        {return NULL; }
+    } 
+    // 2. next have been assigned before
+    else 
+    {
+        next = list_next(&current_clock->f_elem); 
+        if(next == list_end(&frame_table)) 
         {   
+            if (list_size(&frame_table)==1)// list에 원소 1개인 경우 
+            { return NULL; }
+            else // current clock was the last element of the list-> go back to the first frame 
+            { next = list_begin(&frame_table); }
+        }
+    }
+    current_clock = list_entry(next, struct frame_table_entry, f_elem); 
+    return &current_clock->f_elem; 
+    
+
+    /*
+    struct list_elem *next; 
+    // 1. never been assigned 
+    if(current_clock == NULL) 
+    { 
+        next = list_begin(&frame_table); // returns list head -> next
+        if(list_empty(&frame_table)) // if frame table empty 
+        {return NULL; }
+        if (next==NULL) // if there is no frame beginning 
+        {return NULL; }
+        
+        // next can't be list tail 
+        if(next != list_end(&frame_table)) 
+        { 
+            current_clock = list_entry(next, struct frame_table_entry, f_elem); 
+            return next; 
+        } 
+        else // if next is list tail  
+        {  
             return NULL; 
         }
     } 
-    element = list_next(&current_clock->f_elem); 
-    if(element == list_end(&frame_table)) 
-    { 
+    // 2. have been assigned before
+    next = list_next(&current_clock->f_elem); 
+    if(next == list_end(&frame_table)) 
+    {   // list에 원소 1개인 경우 
         if(&current_clock->f_elem == list_begin(&frame_table)) 
         {   
             return NULL; }
-        else 
-            element = list_begin(&frame_table); 
+        else // 리스트의 마지막 요소이므로 맨 처음 frame으로 돌아감 
+        {    next = list_begin(&frame_table); }
+        
     } 
-    current_clock = list_entry(element, struct frame_table_entry, f_elem); 
-    return element; 
+    current_clock = list_entry(next, struct frame_table_entry, f_elem); 
+    return current_clock->f_elem; */
 
     // struct list_elem *next; 
     // if (&current_clock->f_elem == NULL || !list_empty(&frame_table))

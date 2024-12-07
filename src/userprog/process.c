@@ -297,8 +297,14 @@ process_exit (void)
   }
   palloc_free_page(cur->fdTable);
 
-  /*project 3*/
-  syscall_munmap(-1);
+  /*project 3*/ //1207
+  
+  syscall_munmap(CLOSE_ALL); // linear를 통과시키는 듯 근데 진짜 알 수 없음 
+  // printf("mapid_s current thread: %d\n", thread_current()->mapid);
+  // for (int i = 0; i < thread_current()->mapid; i++)
+  // {
+  //   syscall_munmap(i);
+  // }
   hash_destroy(&(cur->sp_table), spt_destructor);
 
   /* Destroy the current process's page directory and switch back

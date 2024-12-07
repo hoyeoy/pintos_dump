@@ -6,6 +6,8 @@
 #include "lib/user/syscall.h"
 #include "userprog/pagedir.h"
 
+#define CLOSE_ALL 9999
+
 void syscall_init (void);
 
 struct sp_entry *if_user_add(void *addr);

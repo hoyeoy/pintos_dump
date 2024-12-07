@@ -384,7 +384,7 @@ syscall_munmap(int mapping)
   for(mmap_elem=list_begin(&(t->mmap_file_list));mmap_elem!=list_end(&(t->mmap_file_list));mmap_elem=list_next(mmap_elem))
   {
     struct mmap_file * mmap_delete = list_entry(mmap_elem, struct mmap_file, elem);
-    if(mmap_delete->mapid == mapping || mapping == -1){
+    if((mmap_delete->mapid == mapping) || (mapping == CLOSE_ALL)){
       for(spe_elem=list_begin(&(mmap_delete->spe_list));spe_elem!=list_end(&(mmap_delete->spe_list));spe_elem=list_next(spe_elem))
       {
         struct sp_entry* spe_delete = list_entry(spe_elem, struct sp_entry, mmap_elem);
@@ -420,4 +420,5 @@ syscall_munmap(int mapping)
       // free(mmap_delete);
     }
   }
+  
 }

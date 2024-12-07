@@ -149,27 +149,36 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-   //printf("pagefault occur\n");
+   //
    /*project 3*/
    if(not_present == false){
+      //printf("pagefault not present\n");
       syscall_exit(-1);
    } else{
    struct sp_entry *spe = find_spe(fault_addr);
-
    if(spe!=NULL){
       if((write==1)&&(spe->writable==false)){
+         //printf("pagefault write\n");
          syscall_exit(-1);
       }
-      page_fault_handler(spe);
-      if(spe->is_loaded == false){ // not loaded
-         syscall_exit(-1);
+      bool tmp = true; 
+      tmp = page_fault_handler(spe);
+      if (!tmp)
+      {
+         //printf("pagefault handler \n");
+         syscall_exit(-1); 
       }
+      /*if(spe->is_loaded == false){ // not loaded
+         syscall_exit(-1);
+      }*/
    }else{ // spe is null
       if(fault_addr >= f->esp - 32){
          if(!expand_stack(fault_addr)){
+            //printf("pagefault expand stack\n");
             syscall_exit(-1);
          }
       }else{
+         //printf("pagefault exit\n");
          syscall_exit(-1);
       }
    }

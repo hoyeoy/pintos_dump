@@ -37,6 +37,10 @@
 #include "filesys/filesys.h"
 #include "filesys/fsutil.h"
 #endif
+#ifdef VM
+#include "vm/page.h"
+#include "vm/swap.h"
+#endif
 
 /* Page directory with kernel mappings only. */
 uint32_t *init_page_dir;
@@ -129,9 +133,9 @@ main (void)
   filesys_init (format_filesys);
 #endif
 
-#ifdef VM_SWAP_H
+/*Project 3*/
   init_swap();
-#endif 
+  f_table_init();
 
   printf ("Boot complete.\n");
   
